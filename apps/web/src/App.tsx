@@ -3,7 +3,10 @@ import AuthPage from './pages/auth';
 import { ConnectionListPage } from './pages/connections/connection-list';
 import { ConnectionFormPage } from './pages/connections/connection-form';
 import { ConnectionLoginPage } from './pages/connection-login/connection-login';
+import { DatabaseBrowserPage } from './pages/database/database-browser';
+import { MainLayout } from './pages/database/components/main-layout';
 import { ProtectedRoute } from './components/protected-route';
+import { ConnectionProtectedRoute } from './components/connection-protected-route';
 
 function App() {
   return (
@@ -40,6 +43,19 @@ function App() {
           element={
             <ProtectedRoute>
               <ConnectionLoginPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Database browser routes */}
+        <Route
+          path="/connections/:id/database"
+          element={
+            <ProtectedRoute>
+              <ConnectionProtectedRoute>
+                <MainLayout>
+                  <DatabaseBrowserPage />
+                </MainLayout>
+              </ConnectionProtectedRoute>
             </ProtectedRoute>
           }
         />

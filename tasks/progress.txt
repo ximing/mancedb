@@ -258,3 +258,42 @@
 - The `db.tableNames()` method returns all table names in the database
 - The `table.countRows()` method returns the number of rows in a table
 ---
+
+## 2026-02-16 - US-009 Complete
+- Implemented MainLayout component with collapsible sidebar
+- Created DatabaseService for managing database state and table list
+- Created database API file for fetching tables and database info
+- Created ConnectionProtectedRoute component for connection-based auth
+- Created DatabaseBrowserPage showing database overview and table grid
+- Sidebar features:
+  - Connection info display (name, type, path)
+  - Table list with row counts
+  - Click to select table
+  - Collapse/expand functionality
+  - Theme toggle
+  - Logout and back to connections links
+- Top toolbar with refresh button and current selection display
+- Main content area showing:
+  - Database overview card with stats
+  - Table grid with row counts
+  - Empty state when no tables
+  - Getting started hint
+- Updated App.tsx with new /connections/:id/database route
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/web/src/api/database.ts (new)
+- apps/web/src/services/database.service.ts (new)
+- apps/web/src/components/connection-protected-route.tsx (new)
+- apps/web/src/pages/database/components/main-layout.tsx (new)
+- apps/web/src/pages/database/database-browser.tsx (new)
+- apps/web/src/App.tsx
+
+**Learnings for future iterations:**
+- Use singleton instance directly for services like `connectionAuthService` instead of `useService()`
+- The `view()` HOC from @rabjs/react makes components reactive to service state changes
+- Sidebar collapse state is stored in DatabaseService for persistence
+- ConnectionProtectedRoute uses the singleton `connectionAuthService.isAuthenticated` directly
+- MainLayout loads connection details and database tables on mount
+- Tables are displayed with row counts from the database info API
+---
