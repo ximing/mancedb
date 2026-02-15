@@ -3,6 +3,9 @@ import { view, useService } from '@rabjs/react';
 import { DatabaseService } from '../../../services/database.service';
 import type { FilterOperator, FilterCondition } from '../../../api/table-data';
 
+// Type for row ID
+type RowId = string | number;
+
 // Icons
 const TableIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,6 +80,13 @@ const TrashIcon = () => (
   </svg>
 );
 
+const WarningIcon = () => (
+  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
+
 interface TableDataViewProps {
   tableName: string;
 }
@@ -122,6 +132,83 @@ const RowDetailModal = ({ row, isOpen, onClose }: RowDetailModalProps) => {
             className="px-4 py-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-dark-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
           >
             Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  affectedCount: number;
+  isLoading: boolean;
+  error: string | null;
+}
+
+const DeleteConfirmationModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  affectedCount,
+  isLoading,
+  error,
+}: DeleteConfirmationModalProps) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-xl max-w-md w-full">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 dark:border-dark-700">
+          <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+            <WarningIcon />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-gray-600 dark:text-dark-300">{message}</p>
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <p className="text-sm text-red-800 dark:text-red-400">
+              This will permanently delete <strong>{affectedCount.toLocaleString()}</strong> row{affectedCount !== 1 ? 's' : ''}.
+              This action cannot be undone.
+            </p>
+          </div>
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-dark-700">
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="px-4 py-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-dark-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <>
+                <TrashIcon />
+                <span>Delete</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -393,6 +480,8 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
   const [selectedRow, setSelectedRow] = useState<Record<string, unknown> | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<'selected' | 'filtered'>('selected');
 
   const {
     tableData,
@@ -400,6 +489,10 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
     sortColumn,
     sortOrder,
     filters,
+    selectedRowIds,
+    selectedRowCount,
+    isDeletingRows,
+    rowDeleteError,
   } = databaseService;
 
   // Load data on mount
@@ -492,6 +585,78 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
     return pages;
   };
 
+  // Get row ID from row data (try common ID fields)
+  const getRowId = (row: Record<string, unknown>): RowId => {
+    // Try common ID field names
+    const idFields = ['id', 'ID', 'Id', '_id', 'row_id', 'uuid', 'pk'];
+    for (const field of idFields) {
+      if (row[field] !== undefined && row[field] !== null) {
+        return row[field] as RowId;
+      }
+    }
+    // Fallback: use row index as string
+    return String(row['__row_index'] ?? Math.random());
+  };
+
+  // Get current page row IDs
+  const currentPageRowIds = tableData.rows.map(getRowId);
+
+  // Check if all rows on current page are selected
+  const areAllCurrentRowsSelected = currentPageRowIds.length > 0 &&
+    currentPageRowIds.every(id => selectedRowIds.has(id));
+
+  // Handle select all checkbox
+  const handleSelectAll = () => {
+    if (areAllCurrentRowsSelected) {
+      databaseService.deselectAllRowsOnPage(currentPageRowIds);
+    } else {
+      databaseService.selectAllRowsOnPage(currentPageRowIds);
+    }
+  };
+
+  // Open delete modal for selected rows
+  const openDeleteSelectedModal = () => {
+    if (selectedRowCount === 0) return;
+    setDeleteMode('selected');
+    setIsDeleteModalOpen(true);
+    databaseService.clearRowDeleteMessages();
+  };
+
+  // Open delete modal for filtered rows
+  const openDeleteFilteredModal = () => {
+    if (filters.length === 0) return;
+    setDeleteMode('filtered');
+    setIsDeleteModalOpen(true);
+    databaseService.clearRowDeleteMessages();
+  };
+
+  // Close delete modal
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    databaseService.clearRowDeleteMessages();
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (deleteMode === 'selected') {
+      await databaseService.deleteSelectedRows(tableName);
+    } else {
+      await databaseService.deleteRowsByFilter(tableName);
+    }
+    // Close modal if successful (no error)
+    if (!databaseService.rowDeleteError) {
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  // Get affected count for delete modal
+  const getAffectedCount = () => {
+    if (deleteMode === 'selected') {
+      return selectedRowCount;
+    }
+    return tableData.totalCount;
+  };
+
   if (tableData.isLoading && tableData.rows.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -537,6 +702,26 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Delete selected button */}
+            {selectedRowCount > 0 && (
+              <button
+                onClick={openDeleteSelectedModal}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+              >
+                <TrashIcon />
+                <span>Delete {selectedRowCount} selected</span>
+              </button>
+            )}
+            {/* Delete filtered button */}
+            {filters.length > 0 && (
+              <button
+                onClick={openDeleteFilteredModal}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors"
+              >
+                <TrashIcon />
+                <span>Delete filtered ({tableData.totalCount.toLocaleString()})</span>
+              </button>
+            )}
             {/* Filter toggle button */}
             <button
               onClick={() => setShowFilterPanel(!showFilterPanel)}
@@ -594,6 +779,16 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-dark-700/50">
               <tr>
+                {/* Select all checkbox column */}
+                <th className="px-4 py-3 text-left w-10">
+                  <input
+                    type="checkbox"
+                    checked={areAllCurrentRowsSelected}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    title={areAllCurrentRowsSelected ? "Deselect all on this page" : "Select all on this page"}
+                  />
+                </th>
                 {/* Row number column */}
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-400 uppercase tracking-wider w-16">
                   #
@@ -621,7 +816,7 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
               {tableData.rows.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={columns.length + 2}
+                    colSpan={columns.length + 3}
                     className="px-6 py-12 text-center text-gray-500 dark:text-dark-400"
                   >
                     <div className="flex flex-col items-center gap-2">
@@ -633,12 +828,28 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
               ) : (
                 tableData.rows.map((row, rowIndex) => {
                   const rowNumber = (tableData.page - 1) * tableData.pageSize + rowIndex + 1;
+                  const rowId = getRowId(row);
+                  const isSelected = databaseService.isRowSelected(rowId);
                   return (
                     <tr
                       key={rowIndex}
-                      className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors cursor-pointer"
+                      className={`hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors cursor-pointer ${
+                        isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                      }`}
                       onClick={() => handleRowClick(row)}
                     >
+                      {/* Checkbox cell */}
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            databaseService.toggleRowSelection(rowId);
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-400 dark:text-dark-500">
                         {rowNumber}
                       </td>
@@ -725,6 +936,22 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
         row={selectedRow}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleDeleteConfirm}
+        title={deleteMode === 'selected' ? 'Delete Selected Rows' : 'Delete Filtered Rows'}
+        message={
+          deleteMode === 'selected'
+            ? `Are you sure you want to delete the ${selectedRowCount} selected row${selectedRowCount !== 1 ? 's' : ''}?`
+            : 'Are you sure you want to delete all rows matching the current filters?'
+        }
+        affectedCount={getAffectedCount()}
+        isLoading={isDeletingRows}
+        error={rowDeleteError}
       />
     </div>
   );

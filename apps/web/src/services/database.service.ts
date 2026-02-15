@@ -1,7 +1,7 @@
 import { Service } from '@rabjs/react';
 import { getTables, getDatabaseInfo } from '../api/database';
 import { getTableSchema, deleteTable, renameTable } from '../api/table';
-import { getTableData, type TableDataResult, type FilterCondition, type FilterOperator } from '../api/table-data';
+import { getTableData, deleteRows, deleteRowById, type TableDataResult, type FilterCondition, type FilterOperator } from '../api/table-data';
 import { executeQuery, getQueryHistory, type ExecuteQueryResult, type QueryHistoryEntry } from '../api/query';
 import { addColumn, dropColumn, type AddColumnRequest, type ColumnType } from '../api/table-schema';
 
@@ -94,6 +94,12 @@ export class DatabaseService extends Service {
   isRenamingTable = false;
   tableError: string | null = null;
   tableSuccessMessage: string | null = null;
+
+  // Row deletion state
+  isDeletingRows = false;
+  rowDeleteError: string | null = null;
+  rowDeleteSuccessMessage: string | null = null;
+  selectedRowIds: Set<string | number> = new Set();
 
   /**
    * Load all tables from the database
@@ -632,6 +638,141 @@ export class DatabaseService extends Service {
       return false;
     } finally {
       this.isRenamingTable = false;
+    }
+  }
+
+  /**
+   * Clear row deletion error and success messages
+   */
+  clearRowDeleteMessages(): void {
+    this.rowDeleteError = null;
+    this.rowDeleteSuccessMessage = null;
+  }
+
+  /**
+   * Toggle selection of a row
+   */
+  toggleRowSelection(rowId: string | number): void {
+    if (this.selectedRowIds.has(rowId)) {
+      this.selectedRowIds.delete(rowId);
+    } else {
+      this.selectedRowIds.add(rowId);
+    }
+  }
+
+  /**
+   * Select all rows on the current page
+   */
+  selectAllRowsOnPage(rowIds: (string | number)[]): void {
+    rowIds.forEach(id => this.selectedRowIds.add(id));
+  }
+
+  /**
+   * Deselect all rows on the current page
+   */
+  deselectAllRowsOnPage(rowIds: (string | number)[]): void {
+    rowIds.forEach(id => this.selectedRowIds.delete(id));
+  }
+
+  /**
+   * Clear all row selections
+   */
+  clearRowSelection(): void {
+    this.selectedRowIds.clear();
+  }
+
+  /**
+   * Check if a row is selected
+   */
+  isRowSelected(rowId: string | number): boolean {
+    return this.selectedRowIds.has(rowId);
+  }
+
+  /**
+   * Get selected row count
+   */
+  get selectedRowCount(): number {
+    return this.selectedRowIds.size;
+  }
+
+  /**
+   * Delete selected rows by their IDs
+   */
+  async deleteSelectedRows(tableName: string): Promise<number> {
+    if (this.selectedRowIds.size === 0) {
+      this.rowDeleteError = 'No rows selected';
+      return 0;
+    }
+
+    this.isDeletingRows = true;
+    this.rowDeleteError = null;
+    this.rowDeleteSuccessMessage = null;
+
+    let totalDeleted = 0;
+
+    try {
+      // Delete rows one by one
+      for (const rowId of this.selectedRowIds) {
+        const response = await deleteRowById(tableName, rowId);
+        if (response.code === 0) {
+          totalDeleted += response.data.deletedCount;
+        }
+      }
+
+      this.rowDeleteSuccessMessage = `${totalDeleted} row${totalDeleted !== 1 ? 's' : ''} deleted successfully`;
+      this.selectedRowIds.clear();
+      // Refresh table data to show updated rows
+      await this.loadTableData();
+      // Refresh schema to update row count
+      await this.refreshTableSchema();
+      // Refresh database info
+      await this.loadDatabaseInfo();
+      return totalDeleted;
+    } catch (err) {
+      this.rowDeleteError = err instanceof Error ? err.message : 'Failed to delete rows';
+      return 0;
+    } finally {
+      this.isDeletingRows = false;
+    }
+  }
+
+  /**
+   * Delete rows by filter conditions (bulk delete)
+   */
+  async deleteRowsByFilter(tableName: string): Promise<number> {
+    if (this.filters.length === 0) {
+      this.rowDeleteError = 'No filters applied. Apply filters to select rows for deletion.';
+      return 0;
+    }
+
+    this.isDeletingRows = true;
+    this.rowDeleteError = null;
+    this.rowDeleteSuccessMessage = null;
+
+    try {
+      const response = await deleteRows(tableName, { filters: this.filters });
+
+      if (response.code === 0) {
+        const deletedCount = response.data.deletedCount;
+        this.rowDeleteSuccessMessage = `${deletedCount} row${deletedCount !== 1 ? 's' : ''} deleted successfully`;
+        // Clear filters after bulk delete
+        this.clearFilters();
+        // Refresh table data
+        await this.loadTableData();
+        // Refresh schema to update row count
+        await this.refreshTableSchema();
+        // Refresh database info
+        await this.loadDatabaseInfo();
+        return deletedCount;
+      } else {
+        this.rowDeleteError = 'Failed to delete rows';
+        return 0;
+      }
+    } catch (err) {
+      this.rowDeleteError = err instanceof Error ? err.message : 'Failed to delete rows';
+      return 0;
+    } finally {
+      this.isDeletingRows = false;
     }
   }
 }

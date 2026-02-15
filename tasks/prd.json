@@ -380,7 +380,7 @@
         "Typecheck passes"
       ],
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "notes": "数据删除 API"
     },
     {

@@ -43,3 +43,30 @@ export const getTableData = (tableName: string, params: TableDataQueryParams = {
 
   return request.get<never, { code: number; data: TableDataResult }>(url);
 };
+
+export interface DeleteRowsRequest {
+  filters?: FilterCondition[];
+  whereClause?: string;
+}
+
+export interface DeleteRowsResult {
+  deletedCount: number;
+}
+
+/**
+ * Delete rows from a table based on filter conditions
+ * DELETE /api/v1/tables/:name/rows
+ */
+export const deleteRows = (tableName: string, body: DeleteRowsRequest) => {
+  const url = `/api/v1/tables/${encodeURIComponent(tableName)}/rows`;
+  return request.delete<never, { code: number; data: DeleteRowsResult }>(url, { data: body });
+};
+
+/**
+ * Delete a single row by ID
+ * DELETE /api/v1/tables/:name/rows/:id
+ */
+export const deleteRowById = (tableName: string, rowId: string | number) => {
+  const url = `/api/v1/tables/${encodeURIComponent(tableName)}/rows/${encodeURIComponent(rowId)}`;
+  return request.delete<never, { code: number; data: DeleteRowsResult }>(url);
+};

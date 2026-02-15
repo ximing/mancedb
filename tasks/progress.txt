@@ -656,3 +656,25 @@
 - Table rename updates both the tables list and selected table state
 - Form validation in modals should clear errors when user makes changes
 ---
+
+## 2026-02-16 - US-022 Complete
+- Implemented deleteRows() method in TableService for batch row deletion
+- Implemented deleteRowById() method for single row deletion by ID
+- Added DELETE /api/v1/tables/:name/rows endpoint for batch deletion with filters or whereClause
+- Added DELETE /api/v1/tables/:name/rows/:id endpoint for single row deletion
+- Returns deletedCount in response to indicate number of rows affected
+- Uses LanceDB's table.delete() method with WHERE clause filtering
+- Both endpoints require JWT authentication via @Authorized() decorator
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/server/src/services/table.service.ts
+- apps/server/src/controllers/v1/table.controller.ts
+
+**Learnings for future iterations:**
+- LanceDB's delete() method takes a WHERE clause string similar to SQL
+- Use table.countRows() before and after deletion to calculate deletedCount
+- The delete() method is available on the table instance, not the connection
+- For single row deletion by ID, construct a WHERE clause like `id = 'value'`
+- Remember to escape single quotes in string values for the WHERE clause
+---
