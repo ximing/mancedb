@@ -678,3 +678,35 @@
 - For single row deletion by ID, construct a WHERE clause like `id = 'value'`
 - Remember to escape single quotes in string values for the WHERE clause
 ---
+
+## 2026-02-16 - US-023 Complete
+- Added deleteRows and deleteRowById API functions to table-data.ts
+- Extended DatabaseService with row deletion state and methods:
+  - selectedRowIds: Set<string | number> for tracking selected rows
+  - isDeletingRows, rowDeleteError, rowDeleteSuccessMessage state
+  - toggleRowSelection(), selectAllRowsOnPage(), deselectAllRowsOnPage()
+  - clearRowSelection(), isRowSelected(), selectedRowCount getter
+  - deleteSelectedRows(), deleteRowsByFilter() methods
+- Updated TableDataView component with:
+  - Checkboxes in table header for select all on current page
+  - Checkboxes in each row for individual selection
+  - Delete selected rows button (appears when rows selected)
+  - Delete filtered rows button (appears when filters applied)
+  - Delete confirmation modal with affected row count
+  - Error display in modal for failed deletions
+  - Auto-refresh table data and schema after successful deletion
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/web/src/api/table-data.ts
+- apps/web/src/services/database.service.ts
+- apps/web/src/pages/database/components/table-data-view.tsx
+
+**Learnings for future iterations:**
+- Use axios delete with { data: body } config to send request body
+- Row selection uses Set for O(1) lookup and easy toggle operations
+- Selection is per-page only - selecting all on one page doesn't affect other pages
+- Delete modal shows affected count and requires confirmation
+- After deletion, refresh table data, schema (for row count), and database info
+- Selected rows are highlighted with primary color background
+---

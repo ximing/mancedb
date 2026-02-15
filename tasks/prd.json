@@ -398,7 +398,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 23,
-      "passes": false,
+      "passes": true,
       "notes": "数据删除界面"
     },
     {
