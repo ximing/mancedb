@@ -6,6 +6,7 @@
 import type { Migration } from '../types.js';
 import { usersTableMigration } from './001-init.js';
 import { createIndexesMigration } from './002-create-indexes.js';
+import { connectionsTableMigration, queryHistoryTableMigration } from './003-admin-tables.js';
 
 /**
  * All available migrations organized by table and version
@@ -23,10 +24,14 @@ export const ALL_MIGRATIONS: Migration[] = [
   // Version 2: Create scalar indexes for query optimization
   createIndexesMigration,
 
+  // Version 3-4: Admin tool tables
+  connectionsTableMigration,
+  queryHistoryTableMigration,
+
   // Add future migrations here
   // Example:
-  // - Version 3: Add new field to existing table
-  // - Version 4: Add new table
+  // - Version 5: Add new field to existing table
+  // - Version 6: Add new table
   // etc.
 ];
 
