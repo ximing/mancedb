@@ -53,6 +53,18 @@ const CheckIcon = () => (
   </svg>
 );
 
+const FileCsvIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);
+
+const FileJsonIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+  </svg>
+);
+
 const ErrorIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -70,6 +82,51 @@ const DatabaseIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
   </svg>
 );
+
+/**
+ * Convert query results to CSV format
+ */
+const convertToCsv = (rows: Record<string, unknown>[]): string => {
+  if (rows.length === 0) return '';
+
+  const columns = Object.keys(rows[0]);
+
+  // Header row
+  const header = columns.join(',');
+
+  // Data rows
+  const dataRows = rows.map(row => {
+    return columns.map(col => {
+      const value = row[col];
+      if (value === null || value === undefined) {
+        return '';
+      }
+      const str = String(value);
+      // Escape values that contain commas, quotes, or newlines
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    }).join(',');
+  });
+
+  return [header, ...dataRows].join('\n');
+};
+
+/**
+ * Download data as a file
+ */
+const downloadFile = (content: string, filename: string, mimeType: string): void => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
 
 /**
  * Format cell value for display
@@ -262,6 +319,22 @@ export const SqlQueryView = view(() => {
     }
   };
 
+  const handleExportCsv = () => {
+    if (queryResult.rows.length > 0) {
+      const csv = convertToCsv(queryResult.rows);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadFile(csv, `query-result-${timestamp}.csv`, 'text/csv;charset=utf-8;');
+    }
+  };
+
+  const handleExportJson = () => {
+    if (queryResult.rows.length > 0) {
+      const json = JSON.stringify(queryResult.rows, null, 2);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadFile(json, `query-result-${timestamp}.json`, 'application/json');
+    }
+  };
+
   // Get column names from first row
   const columns = queryResult.rows.length > 0 ? Object.keys(queryResult.rows[0]) : [];
 
@@ -440,12 +513,31 @@ export const SqlQueryView = view(() => {
                 {queryResult.executionTimeMs}ms
               </span>
             </div>
-            <button
-              onClick={handleCopyResults}
-              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-            >
-              {copied ? 'Copied!' : 'Copy as JSON'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportCsv}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+                title="Export as CSV"
+              >
+                <FileCsvIcon />
+                <span>CSV</span>
+              </button>
+              <button
+                onClick={handleExportJson}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+                title="Export as JSON"
+              >
+                <FileJsonIcon />
+                <span>JSON</span>
+              </button>
+              <div className="w-px h-4 bg-gray-300 dark:bg-dark-600 mx-1"></div>
+              <button
+                onClick={handleCopyResults}
+                className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors px-2"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
           </div>
 
           {/* Results Table */}

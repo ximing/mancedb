@@ -277,7 +277,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": "SQL 编辑器是核心功能"
     },
     {
@@ -294,7 +294,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": "查询历史和导出功能"
     },
     {

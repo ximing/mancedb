@@ -6,6 +6,14 @@
 - Use different icon/color combinations for data types: string (green), number (blue), boolean (purple), vector (orange), date (cyan), binary (gray)
 - LanceDB Arrow types need special parsing - fixed_size_list contains vector dimensions
 - Table schema is fetched via GET /api/v1/tables/:name/schema endpoint
+- SQL queries are executed via POST /api/v1/query endpoint
+- Query history is loaded via GET /api/v1/query/history endpoint
+- Use regex character class `[=]` instead of escaped `\=` in regex literals to avoid TypeScript issues
+- SQL editor supports Cmd/Ctrl+Enter shortcut to execute query
+- Sample queries are generated dynamically based on available tables
+- Export to CSV: Use convertToCsv() helper with proper escaping for values containing commas/quotes/newlines
+- Export to JSON: Use JSON.stringify() with timestamped filenames for downloads
+- Use downloadFile() helper with Blob and URL.createObjectURL for file downloads
 
 ## 2026-02-15 - Initial Setup
 - Created branch `ralph/lancedb-admin`
@@ -482,4 +490,58 @@
 - Only SELECT queries are allowed for security (read-only access)
 - Query execution time is measured using Date.now() before and after query
 - Failed queries are also recorded to history with error message
+
+## 2026-02-16 - US-016 Complete
+- Created query.ts API with executeQuery and getQueryHistory functions
+- Extended DatabaseService with SQL query state management:
+  - sqlQuery, queryResult, queryHistory state
+  - executeQuery, formatSql, loadQueryHistory methods
+- Created SQLQueryView component with:
+  - SQL editor textarea with placeholder and keyboard shortcuts (Cmd/Ctrl+Enter)
+  - Execute button with loading state
+  - Query results display in scrollable table
+  - Execution time and row count display in results header
+  - Query history panel with relative timestamps and quick load
+  - Sample queries generated from available tables
+  - SQL formatting with keyword capitalization
+  - Copy results as JSON functionality
+  - Error display with friendly messages
+- Updated DatabaseContent to include SQL Query tab:
+  - Available in table view (Schema/Data/SQL tabs)
+  - Available in database overview (Overview/SQL tabs)
+- Both server and web builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/web/src/api/query.ts (new)
+- apps/web/src/services/database.service.ts
+- apps/web/src/pages/database/components/sql-query-view.tsx (new)
+- apps/web/src/pages/database/components/database-content.tsx
+
+**Learnings for future iterations:**
+- Use regex character class `[=]` instead of escaped `\=` in regex literals to avoid TypeScript parsing issues
+- SQL editor uses textarea with monospaced font for code editing
+- Query history shows relative time (e.g., "5m ago") for better UX
+- Sample queries are dynamically generated based on available tables
+- Cmd/Ctrl+Enter shortcut is implemented via onKeyDown handler
+- Results table reuses the same cell formatting as table data view
+
+## 2026-02-16 - US-017 Complete
+- Implemented query result export functionality in SQLQueryView component
+- Added CSV export with proper escaping for special characters (commas, quotes, newlines)
+- Added JSON export with formatted output and timestamped filenames
+- Added export buttons (CSV, JSON) to query results header alongside Copy button
+- Query history functionality was already implemented in US-016:
+  - GET /api/v1/query/history endpoint returns recent queries
+  - History panel shows SQL, execution time, row count, timestamp
+  - Click history item to populate editor
+- Both server and web builds pass (typecheck)
+
+**Files changed:**
+- apps/web/src/pages/database/components/sql-query-view.tsx
+
+**Learnings for future iterations:**
+- CSV export needs to escape values containing commas, quotes, or newlines by wrapping in quotes and doubling internal quotes
+- Use Blob and URL.createObjectURL for client-side file downloads
+- Timestamped filenames prevent overwriting previous exports
+- Keep export buttons grouped with copy functionality for better UX
 ---
