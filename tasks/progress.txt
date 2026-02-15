@@ -741,3 +741,29 @@
 - The error method in ResponseUtil takes (code, msg) not (msg, code, errorCode)
 - DB_CONNECT_ERROR error code is appropriate for health check failures
 ---
+
+## 2026-02-16 - US-025 Complete
+- Created comprehensive deployment documentation:
+  - ENVIRONMENT.md: Detailed environment variable configuration guide
+  - Updated README.md: Rewrote for LanceDB Admin with new features and deployment instructions
+- docker-compose.yml was already updated in US-024 with proper configuration
+- Documentation includes:
+  - Quick start guide for Docker deployment
+  - Complete environment variable reference
+  - Data persistence instructions
+  - Health check configuration
+  - Security recommendations
+  - FAQ section
+- Both server and web builds pass (typecheck and lint)
+
+**Files changed:**
+- ENVIRONMENT.md (new)
+- README.md (updated)
+
+**Learnings for future iterations:**
+- Keep environment variable documentation separate from README for easier maintenance
+- Use tables for environment variable documentation for better readability
+- Include Docker deployment examples in multiple formats (Compose, Run, Build)
+- Document security best practices prominently
+- Include troubleshooting section for common issues
+---
