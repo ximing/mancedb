@@ -384,3 +384,41 @@
 - Date objects are converted to ISO strings for JSON serialization
 - Maximum page size is capped at 1000 to prevent memory issues
 ---
+
+## 2026-02-16 - US-013 Complete
+- Created table-data.ts API for fetching paginated table data from GET /api/v1/tables/:name/data
+- Extended DatabaseService with table data state management:
+  - TableDataState interface with rows, totalCount, page, pageSize, totalPages, isLoading, error
+  - loadTableData(), changePage(), changePageSize() methods
+  - setSorting(), toggleSort() for column sorting
+  - refreshTableData() for reloading data
+- Created TableDataView component with:
+  - Data table with horizontal scrolling for many columns
+  - Row numbers showing absolute position in table
+  - Vector columns display as dimension summary (e.g., [1536-dim vector])
+  - NULL values shown in italic gray
+  - Pagination with 50/100/200 per page options
+  - Smart page number display with ellipsis for many pages
+  - Click row or eye icon to view full JSON details in modal
+  - Loading and error states
+- Updated DatabaseContent with Schema/Data tabs:
+  - Tab navigation with Schema and Data options
+  - Back button to return to database browser
+  - Active tab state managed in DatabaseService
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/web/src/api/table-data.ts (new)
+- apps/web/src/services/database.service.ts
+- apps/web/src/pages/database/components/table-data-view.tsx (new)
+- apps/web/src/pages/database/components/database-content.tsx
+
+**Learnings for future iterations:**
+- The table data API uses the same request utility as other APIs (request.get with URLSearchParams)
+- Vector detection in frontend relies on string format "[N-dim vector]" from backend
+- Row numbers are calculated from (page - 1) * pageSize + rowIndex + 1
+- Pagination UI shows ellipsis (...) when there are many pages
+- Use getTypeStyle() helper from table-schema.tsx for consistent type display
+- The JSON detail modal shows full row data including truncated vectors
+- Tab switching triggers data load when switching to Data tab
+---
