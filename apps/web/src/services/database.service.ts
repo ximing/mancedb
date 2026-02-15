@@ -1,7 +1,7 @@
 import { Service } from '@rabjs/react';
 import { getTables, getDatabaseInfo } from '../api/database';
 import { getTableSchema } from '../api/table';
-import { getTableData, type TableDataResult } from '../api/table-data';
+import { getTableData, type TableDataResult, type FilterCondition, type FilterOperator } from '../api/table-data';
 
 export interface TableInfo {
   name: string;
@@ -64,6 +64,9 @@ export class DatabaseService extends Service {
   // Sorting state
   sortColumn: string | null = null;
   sortOrder: 'asc' | 'desc' = 'asc';
+
+  // Filter state
+  filters: FilterCondition[] = [];
 
   /**
    * Load all tables from the database
@@ -200,7 +203,7 @@ export class DatabaseService extends Service {
   }
 
   /**
-   * Load table data with pagination
+   * Load table data with pagination and filters
    */
   async loadTableData(page?: number, pageSize?: number): Promise<void> {
     if (!this.selectedTable) return;
@@ -217,6 +220,7 @@ export class DatabaseService extends Service {
         pageSize: targetPageSize,
         sortColumn: this.sortColumn ?? undefined,
         sortOrder: this.sortOrder,
+        filters: this.filters.length > 0 ? this.filters : undefined,
       });
 
       if (response.code === 0) {
@@ -284,6 +288,62 @@ export class DatabaseService extends Service {
    */
   clearTableDataError(): void {
     this.tableData.error = null;
+  }
+
+  /**
+   * Add a filter condition
+   */
+  addFilter(filter: FilterCondition): void {
+    // Remove existing filter for the same column and operator
+    this.filters = this.filters.filter(
+      f => !(f.column === filter.column && f.operator === filter.operator)
+    );
+    this.filters.push(filter);
+  }
+
+  /**
+   * Remove a filter condition
+   */
+  removeFilter(column: string, operator: FilterOperator): void {
+    this.filters = this.filters.filter(
+      f => !(f.column === column && f.operator === operator)
+    );
+  }
+
+  /**
+   * Remove all filters for a column
+   */
+  removeColumnFilters(column: string): void {
+    this.filters = this.filters.filter(f => f.column !== column);
+  }
+
+  /**
+   * Clear all filters
+   */
+  clearFilters(): void {
+    this.filters = [];
+  }
+
+  /**
+   * Apply filters and reload data
+   */
+  async applyFilters(): Promise<void> {
+    await this.loadTableData(1);
+  }
+
+  /**
+   * Get filter value for a column
+   */
+  getFilterValue(column: string, operator: FilterOperator): string | number | undefined {
+    const filter = this.filters.find(f => f.column === column && f.operator === operator);
+    return filter?.value;
+  }
+
+  /**
+   * Check if a column has active filters
+   */
+  hasFilter(column: string): boolean {
+    return this.filters.some(f => f.column === column);
   }
 }
 

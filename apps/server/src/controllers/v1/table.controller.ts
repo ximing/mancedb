@@ -1,7 +1,7 @@
-import { JsonController, Get, Param, Req, QueryParam, Authorized } from 'routing-controllers';
+import { JsonController, Get, Param, Req, QueryParam, Authorized, QueryParams } from 'routing-controllers';
 import { Service } from 'typedi';
 import type { Request } from 'express';
-import { TableService } from '../../services/table.service.js';
+import { TableService, type FilterCondition } from '../../services/table.service.js';
 import { ResponseUtil } from '../../utils/response.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import type { ConnectionAuthInfo } from '../../types/express.js';
@@ -85,7 +85,7 @@ export class TableV1Controller {
 
   /**
    * GET /api/v1/tables/:name/data
-   * Get table data with pagination and sorting
+   * Get table data with pagination, sorting, and filtering
    */
   @Get('/:name/data')
   @Authorized()
@@ -95,6 +95,7 @@ export class TableV1Controller {
     @QueryParam('pageSize') pageSizeParam: string,
     @QueryParam('sortColumn') sortColumn: string,
     @QueryParam('sortOrder') sortOrder: 'asc' | 'desc',
+    @QueryParam('filters') filtersParam: string,
     @Req() req: Request
   ) {
     try {
@@ -111,11 +112,25 @@ export class TableV1Controller {
       // Validate sort order
       const validSortOrder = sortOrder === 'desc' ? 'desc' : 'asc';
 
+      // Parse filters from JSON string
+      let filters: FilterCondition[] | undefined;
+      if (filtersParam) {
+        try {
+          const parsed = JSON.parse(decodeURIComponent(filtersParam));
+          if (Array.isArray(parsed)) {
+            filters = parsed;
+          }
+        } catch {
+          // Invalid filter JSON, ignore
+        }
+      }
+
       const result = await this.tableService.getTableData(connectionId, tableName, {
         page,
         pageSize,
         sortColumn: sortColumn || undefined,
         sortOrder: validSortOrder,
+        filters,
       });
 
       if (!result) {
@@ -145,6 +160,9 @@ export class TableV1Controller {
         }
         if (error.message.includes('does not exist') || error.message.includes('invalid column')) {
           return ResponseUtil.error(ErrorCode.PARAMS_ERROR, error.message);
+        }
+        if (error.message.includes('filter') || error.message.includes('WHERE')) {
+          return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Invalid filter condition');
         }
       }
       return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to get table data');

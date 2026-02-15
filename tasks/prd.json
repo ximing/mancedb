@@ -241,7 +241,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "过滤功能增强数据浏览"
     },
     {

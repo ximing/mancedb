@@ -422,3 +422,36 @@
 - The JSON detail modal shows full row data including truncated vectors
 - Tab switching triggers data load when switching to Data tab
 ---
+
+## 2026-02-16 - US-014 Complete
+- Implemented backend filtering support in TableService with FilterCondition interface
+- Added buildFilterString() and buildSingleFilter() methods to convert filter conditions to LanceDB WHERE clauses
+- Updated GET /api/v1/tables/:name/data endpoint to accept filters parameter as JSON
+- Support filter operators: contains (LIKE), eq, gt, gte, lt, lte
+- Text columns use contains/eq operators, numeric/date columns use comparison operators
+- Multiple filters are combined with AND logic
+- Implemented FilterPanel component with:
+  - Column selector dropdown
+  - Operator selector based on column type
+  - Value input with type detection (number input for numeric types)
+  - Active filter tags with remove button
+  - Apply and Clear All buttons
+- Updated DatabaseService with filter state management (addFilter, removeFilter, clearFilters, applyFilters)
+- Updated table-data.ts API to include filters in query params
+- Added filter indicator in header showing active filter count
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/server/src/services/table.service.ts
+- apps/server/src/controllers/v1/table.controller.ts
+- apps/web/src/api/table-data.ts
+- apps/web/src/services/database.service.ts
+- apps/web/src/pages/database/components/table-data-view.tsx
+
+**Learnings for future iterations:**
+- LanceDB Query doesn't have countRows() - must use toArray().length for filtered counts
+- Filter conditions are passed as URL-encoded JSON in query parameters
+- LanceDB WHERE clause uses SQL-like syntax with LIKE for text matching
+- Always escape single quotes in filter values to prevent SQL injection
+- For large datasets, counting filtered results by loading all rows may be inefficient
+---

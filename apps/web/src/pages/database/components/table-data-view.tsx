@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { view, useService } from '@rabjs/react';
 import { DatabaseService } from '../../../services/database.service';
+import type { FilterOperator, FilterCondition } from '../../../api/table-data';
 
 // Icons
 const TableIcon = () => (
@@ -58,6 +59,24 @@ const XIcon = () => (
   </svg>
 );
 
+const FilterIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+
 interface TableDataViewProps {
   tableName: string;
 }
@@ -66,6 +85,15 @@ interface RowDetailModalProps {
   row: Record<string, unknown> | null;
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface FilterPanelProps {
+  columns: Array<{ name: string; type: string }>;
+  filters: FilterCondition[];
+  onAddFilter: (filter: FilterCondition) => void;
+  onRemoveFilter: (column: string, operator: FilterOperator) => void;
+  onClearFilters: () => void;
+  onApplyFilters: () => void;
 }
 
 const RowDetailModal = ({ row, isOpen, onClose }: RowDetailModalProps) => {
@@ -96,6 +124,207 @@ const RowDetailModal = ({ row, isOpen, onClose }: RowDetailModalProps) => {
             Close
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Filter Panel Component
+ */
+const FilterPanel = ({ columns, filters, onAddFilter, onRemoveFilter, onClearFilters, onApplyFilters }: FilterPanelProps) => {
+  const [selectedColumn, setSelectedColumn] = useState('');
+  const [selectedOperator, setSelectedOperator] = useState<FilterOperator>('contains');
+  const [filterValue, setFilterValue] = useState('');
+
+  const getColumnType = (columnName: string): string => {
+    const col = columns.find(c => c.name === columnName);
+    return col?.type || 'string';
+  };
+
+  const isNumericType = (type: string): boolean => {
+    return type.includes('int') || type.includes('float') || type.includes('double') || type === 'number';
+  };
+
+  const isDateType = (type: string): boolean => {
+    return type.includes('timestamp') || type.includes('date');
+  };
+
+  const getAvailableOperators = (columnName: string): Array<{ value: FilterOperator; label: string }> => {
+    const type = getColumnType(columnName);
+
+    if (isNumericType(type) || isDateType(type)) {
+      return [
+        { value: 'eq', label: '=' },
+        { value: 'gt', label: '>' },
+        { value: 'gte', label: '>=' },
+        { value: 'lt', label: '<' },
+        { value: 'lte', label: '<=' },
+      ];
+    }
+
+    // Default for string/text types
+    return [
+      { value: 'contains', label: 'Contains' },
+      { value: 'eq', label: 'Equals' },
+    ];
+  };
+
+  const handleAddFilter = () => {
+    if (!selectedColumn || !filterValue) return;
+
+    const type = getColumnType(selectedColumn);
+    let value: string | number = filterValue;
+
+    // Convert to number for numeric types
+    if (isNumericType(type)) {
+      const num = parseFloat(filterValue);
+      if (!isNaN(num)) {
+        value = num;
+      }
+    }
+
+    onAddFilter({
+      column: selectedColumn,
+      operator: selectedOperator,
+      value,
+    });
+
+    // Reset value input but keep column/operator for convenience
+    setFilterValue('');
+  };
+
+  const getFilterDisplayLabel = (filter: FilterCondition): string => {
+    const operators: Record<FilterOperator, string> = {
+      contains: 'contains',
+      eq: '=',
+      gt: '>',
+      gte: '>=',
+      lt: '<',
+      lte: '<=',
+    };
+    return `${filter.column} ${operators[filter.operator]} "${filter.value}"`;
+  };
+
+  return (
+    <div className="bg-gray-50 dark:bg-dark-700/50 rounded-lg p-4 space-y-4">
+      <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-dark-300">
+        <FilterIcon />
+        <span>Filter Data</span>
+        {filters.length > 0 && (
+          <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded-full text-xs">
+            {filters.length}
+          </span>
+        )}
+      </div>
+
+      {/* Active Filters */}
+      {filters.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {filters.map((filter, index) => (
+            <span
+              key={`${filter.column}-${filter.operator}-${index}`}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-md text-sm text-gray-700 dark:text-dark-300"
+            >
+              {getFilterDisplayLabel(filter)}
+              <button
+                onClick={() => onRemoveFilter(filter.column, filter.operator)}
+                className="p-0.5 hover:bg-gray-100 dark:hover:bg-dark-600 rounded"
+              >
+                <XIcon />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Add Filter */}
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="flex-1 min-w-[150px]">
+          <label className="block text-xs text-gray-500 dark:text-dark-400 mb-1">Column</label>
+          <select
+            value={selectedColumn}
+            onChange={(e) => {
+              setSelectedColumn(e.target.value);
+              // Reset operator when column changes
+              setSelectedOperator('contains');
+            }}
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-sm text-gray-700 dark:text-dark-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            <option value="">Select column...</option>
+            {columns.map(col => (
+              <option key={col.name} value={col.name}>{col.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {selectedColumn && (
+          <div className="w-32">
+            <label className="block text-xs text-gray-500 dark:text-dark-400 mb-1">Operator</label>
+            <select
+              value={selectedOperator}
+              onChange={(e) => setSelectedOperator(e.target.value as FilterOperator)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-sm text-gray-700 dark:text-dark-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              {getAvailableOperators(selectedColumn).map(op => (
+                <option key={op.value} value={op.value}>{op.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {selectedColumn && (
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs text-gray-500 dark:text-dark-400 mb-1">Value</label>
+            <div className="relative">
+              <input
+                type={isNumericType(getColumnType(selectedColumn)) ? 'number' : 'text'}
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAddFilter();
+                  }
+                }}
+                placeholder="Enter value..."
+                className="w-full px-3 py-2 pl-9 rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-sm text-gray-700 dark:text-dark-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <SearchIcon />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedColumn && (
+          <button
+            onClick={handleAddFilter}
+            disabled={!filterValue}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Add
+          </button>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-dark-600">
+        <button
+          onClick={onApplyFilters}
+          disabled={filters.length === 0}
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Apply Filters
+        </button>
+        {filters.length > 0 && (
+          <button
+            onClick={onClearFilters}
+            className="flex items-center gap-1 px-3 py-2 text-gray-600 dark:text-dark-400 hover:text-red-600 dark:hover:text-red-400 text-sm transition-colors"
+          >
+            <TrashIcon />
+            Clear All
+          </button>
+        )}
       </div>
     </div>
   );
@@ -163,12 +392,14 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
   const databaseService = useService(DatabaseService);
   const [selectedRow, setSelectedRow] = useState<Record<string, unknown> | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   const {
     tableData,
     currentSchema,
     sortColumn,
     sortOrder,
+    filters,
   } = databaseService;
 
   // Load data on mount
@@ -198,9 +429,32 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
     setSelectedRow(null);
   };
 
+  const handleAddFilter = (filter: FilterCondition) => {
+    databaseService.addFilter(filter);
+  };
+
+  const handleRemoveFilter = (column: string, operator: FilterOperator) => {
+    databaseService.removeFilter(column, operator);
+  };
+
+  const handleClearFilters = () => {
+    databaseService.clearFilters();
+    databaseService.applyFilters();
+  };
+
+  const handleApplyFilters = () => {
+    databaseService.applyFilters();
+  };
+
   // Get column names from schema or data
   const columns = currentSchema?.columns.map(col => col.name) ??
     (tableData.rows.length > 0 ? Object.keys(tableData.rows[0]) : []);
+
+  // Get column info for filter panel
+  const columnInfo = currentSchema?.columns.map(col => ({
+    name: col.name,
+    type: col.type,
+  })) ?? [];
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {
@@ -274,10 +528,32 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">{tableName}</h2>
               <p className="text-sm text-gray-500 dark:text-dark-400">
                 {tableData.totalCount.toLocaleString()} rows total
+                {filters.length > 0 && (
+                  <span className="ml-2 text-primary-600 dark:text-primary-400">
+                    (filtered by {filters.length} condition{filters.length > 1 ? 's' : ''})
+                  </span>
+                )}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Filter toggle button */}
+            <button
+              onClick={() => setShowFilterPanel(!showFilterPanel)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                showFilterPanel || filters.length > 0
+                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+                  : 'text-gray-700 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+              }`}
+            >
+              <FilterIcon />
+              <span>Filter</span>
+              {filters.length > 0 && (
+                <span className="px-1.5 py-0.5 bg-primary-600 text-white rounded-full text-xs">
+                  {filters.length}
+                </span>
+              )}
+            </button>
             {/* Page size selector */}
             <select
               value={tableData.pageSize}
@@ -299,6 +575,18 @@ export const TableDataView = view(({ tableName }: TableDataViewProps) => {
           </div>
         </div>
       </div>
+
+      {/* Filter Panel */}
+      {showFilterPanel && (
+        <FilterPanel
+          columns={columnInfo}
+          filters={filters}
+          onAddFilter={handleAddFilter}
+          onRemoveFilter={handleRemoveFilter}
+          onClearFilters={handleClearFilters}
+          onApplyFilters={handleApplyFilters}
+        />
+      )}
 
       {/* Data Table */}
       <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 overflow-hidden">

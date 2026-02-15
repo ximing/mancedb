@@ -18,11 +18,18 @@ export interface TableSchema {
   createdAt?: number;
 }
 
+export interface FilterCondition {
+  column: string;
+  operator: 'contains' | 'eq' | 'gt' | 'gte' | 'lt' | 'lte';
+  value: string | number;
+}
+
 export interface TableDataQueryOptions {
   page: number;
   pageSize: number;
   sortColumn?: string;
   sortOrder?: 'asc' | 'desc';
+  filters?: FilterCondition[];
 }
 
 export interface TableDataResult {
@@ -277,7 +284,7 @@ export class TableService {
   }
 
   /**
-   * Get table data with pagination and sorting
+   * Get table data with pagination, sorting, and filtering
    */
   async getTableData(
     connectionId: string,
@@ -294,13 +301,31 @@ export class TableService {
 
       const table = await db.openTable(tableName);
       try {
-        const totalCount = await table.countRows();
+        // Build filter string from conditions
+        const filterString = this.buildFilterString(options.filters);
 
-        // Build the query
+        // Get total count (if filters applied, we need to count filtered results)
+        let totalCount: number;
+        if (filterString) {
+          // For filtered queries, we need to execute a count query
+          // LanceDB doesn't have a direct count() on Query, so we use toArray and count
+          // For large datasets, this could be optimized
+          const countQuery = table.query().where(filterString);
+          const allFiltered = await countQuery.toArray();
+          totalCount = allFiltered.length;
+        } else {
+          totalCount = await table.countRows();
+        }
+
+        // Build the data query
         let query = table.query();
 
+        // Apply filters
+        if (filterString) {
+          query = query.where(filterString);
+        }
+
         // Apply pagination
-        // LanceDB uses limit/offset for pagination
         const offset = (options.page - 1) * options.pageSize;
         query = query.limit(options.pageSize).offset(offset);
 
@@ -324,6 +349,89 @@ export class TableService {
       }
     } finally {
       db.close();
+    }
+  }
+
+  /**
+   * Build LanceDB filter string from filter conditions
+   */
+  private buildFilterString(filters?: FilterCondition[]): string | undefined {
+    if (!filters || filters.length === 0) {
+      return undefined;
+    }
+
+    const conditions: string[] = [];
+
+    for (const filter of filters) {
+      const condition = this.buildSingleFilter(filter);
+      if (condition) {
+        conditions.push(condition);
+      }
+    }
+
+    if (conditions.length === 0) {
+      return undefined;
+    }
+
+    // Join conditions with AND
+    return conditions.join(' AND ');
+  }
+
+  /**
+   * Build a single filter condition string
+   */
+  private buildSingleFilter(filter: FilterCondition): string | undefined {
+    const { column, operator, value } = filter;
+
+    // Escape single quotes in column name and string values
+    const escapedColumn = column.replace(/'/g, "\\'");
+
+    switch (operator) {
+      case 'contains':
+        // For text contains, use SQL LIKE with wildcards
+        if (typeof value === 'string') {
+          const escapedValue = value.replace(/'/g, "\\'").replace(/%/g, '\\%');
+          return `${escapedColumn} LIKE '%${escapedValue}%'`;
+        }
+        return undefined;
+
+      case 'eq':
+        if (typeof value === 'string') {
+          const escapedValue = value.replace(/'/g, "\\'");
+          return `${escapedColumn} = '${escapedValue}'`;
+        }
+        return `${escapedColumn} = ${value}`;
+
+      case 'gt':
+        if (typeof value === 'string') {
+          const escapedValue = value.replace(/'/g, "\\'");
+          return `${escapedColumn} > '${escapedValue}'`;
+        }
+        return `${escapedColumn} > ${value}`;
+
+      case 'gte':
+        if (typeof value === 'string') {
+          const escapedValue = value.replace(/'/g, "\\'");
+          return `${escapedColumn} >= '${escapedValue}'`;
+        }
+        return `${escapedColumn} >= ${value}`;
+
+      case 'lt':
+        if (typeof value === 'string') {
+          const escapedValue = value.replace(/'/g, "\\'");
+          return `${escapedColumn} < '${escapedValue}'`;
+        }
+        return `${escapedColumn} < ${value}`;
+
+      case 'lte':
+        if (typeof value === 'string') {
+          const escapedValue = value.replace(/'/g, "\\'");
+          return `${escapedColumn} <= '${escapedValue}'`;
+        }
+        return `${escapedColumn} <= ${value}`;
+
+      default:
+        return undefined;
     }
   }
 
