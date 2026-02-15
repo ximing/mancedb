@@ -259,7 +259,7 @@
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "SQL 查询 API"
     },
     {

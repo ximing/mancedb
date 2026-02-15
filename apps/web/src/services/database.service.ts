@@ -2,6 +2,7 @@ import { Service } from '@rabjs/react';
 import { getTables, getDatabaseInfo } from '../api/database';
 import { getTableSchema } from '../api/table';
 import { getTableData, type TableDataResult, type FilterCondition, type FilterOperator } from '../api/table-data';
+import { executeQuery, getQueryHistory, type ExecuteQueryResult, type QueryHistoryEntry } from '../api/query';
 
 export interface TableInfo {
   name: string;
@@ -48,7 +49,7 @@ export class DatabaseService extends Service {
   currentSchema: TableSchema | null = null;
   isLoadingSchema = false;
   schemaError: string | null = null;
-  activeTab: 'schema' | 'data' = 'schema';
+  activeTab: 'schema' | 'data' | 'query' = 'schema';
 
   // Table data state
   tableData: TableDataState = {
@@ -67,6 +68,19 @@ export class DatabaseService extends Service {
 
   // Filter state
   filters: FilterCondition[] = [];
+
+  // SQL Query state
+  sqlQuery = '';
+  queryResult: ExecuteQueryResult & { isLoading: boolean; error: string | null } = {
+    rows: [],
+    rowCount: 0,
+    executionTimeMs: 0,
+    isLoading: false,
+    error: null,
+  };
+  queryHistory: QueryHistoryEntry[] = [];
+  isLoadingHistory = false;
+  historyError: string | null = null;
 
   /**
    * Load all tables from the database
@@ -183,7 +197,7 @@ export class DatabaseService extends Service {
   /**
    * Set active tab
    */
-  setActiveTab(tab: 'schema' | 'data'): void {
+  setActiveTab(tab: 'schema' | 'data' | 'query'): void {
     this.activeTab = tab;
     // Load data when switching to data tab if not already loaded
     if (tab === 'data' && this.selectedTable && this.tableData.rows.length === 0) {
@@ -344,6 +358,119 @@ export class DatabaseService extends Service {
    */
   hasFilter(column: string): boolean {
     return this.filters.some(f => f.column === column);
+  }
+
+  /**
+   * Set SQL query
+   */
+  setSqlQuery(query: string): void {
+    this.sqlQuery = query;
+  }
+
+  /**
+   * Execute SQL query
+   */
+  async executeQuery(limit?: number): Promise<void> {
+    if (!this.sqlQuery.trim()) {
+      this.queryResult.error = 'Please enter a SQL query';
+      return;
+    }
+
+    this.queryResult.isLoading = true;
+    this.queryResult.error = null;
+
+    try {
+      const response = await executeQuery({
+        sql: this.sqlQuery,
+        limit,
+      });
+
+      if (response.code === 0) {
+        this.queryResult.rows = response.data.rows;
+        this.queryResult.rowCount = response.data.rowCount;
+        this.queryResult.executionTimeMs = response.data.executionTimeMs;
+      } else {
+        this.queryResult.error = 'Failed to execute query';
+      }
+    } catch (err) {
+      this.queryResult.error = err instanceof Error ? err.message : 'Failed to execute query';
+    } finally {
+      this.queryResult.isLoading = false;
+    }
+  }
+
+  /**
+   * Clear query error
+   */
+  clearQueryError(): void {
+    this.queryResult.error = null;
+  }
+
+  /**
+   * Clear query results
+   */
+  clearQueryResults(): void {
+    this.queryResult.rows = [];
+    this.queryResult.rowCount = 0;
+    this.queryResult.executionTimeMs = 0;
+    this.queryResult.error = null;
+  }
+
+  /**
+   * Load query history
+   */
+  async loadQueryHistory(limit?: number): Promise<void> {
+    this.isLoadingHistory = true;
+    this.historyError = null;
+
+    try {
+      const response = await getQueryHistory(limit);
+      if (response.code === 0) {
+        this.queryHistory = response.data.history;
+      } else {
+        this.historyError = 'Failed to load query history';
+      }
+    } catch (err) {
+      this.historyError = err instanceof Error ? err.message : 'Failed to load query history';
+    } finally {
+      this.isLoadingHistory = false;
+    }
+  }
+
+  /**
+   * Set SQL query from history
+   */
+  loadQueryFromHistory(entry: QueryHistoryEntry): void {
+    this.sqlQuery = entry.sql;
+  }
+
+  /**
+   * Format SQL query with basic formatting
+   */
+  formatSql(): void {
+    // Basic SQL formatting
+    let formatted = this.sqlQuery
+      .replace(/\s+/g, ' ')
+      .replace(/\s*,\s*/g, ', ')
+      .replace(/\s*\(\s*/g, ' (')
+      .replace(/\s*\)\s*/g, ') ')
+      .replace(/\s*[=]\s*/g, ' = ')
+      .replace(/\s+FROM\s+/gi, '\nFROM ')
+      .replace(/\s+WHERE\s+/gi, '\nWHERE ')
+      .replace(/\s+ORDER\s+BY\s+/gi, '\nORDER BY ')
+      .replace(/\s+LIMIT\s+/gi, '\nLIMIT ')
+      .replace(/\s+AND\s+/gi, '\n  AND ')
+      .replace(/\s+OR\s+/gi, '\n  OR ')
+      .trim();
+
+    // Capitalize keywords
+    const keywords = ['SELECT', 'FROM', 'WHERE', 'ORDER BY', 'LIMIT', 'AND', 'OR', 'ASC', 'DESC'];
+    keywords.forEach(keyword => {
+      const regex = new RegExp("\\b" + keyword + "\\b", 'gi');
+      formatted = formatted.replace(regex, keyword);
+    });
+
+    this.sqlQuery = formatted;
   }
 }
 

@@ -455,3 +455,31 @@
 - Always escape single quotes in filter values to prevent SQL injection
 - For large datasets, counting filtered results by loading all rows may be inefficient
 ---
+
+## 2026-02-16 - US-015 Complete
+- Implemented QueryService with SQL query execution
+- Created executeQuery() method supporting SELECT, WHERE, ORDER BY, LIMIT
+- Added SQL parsing to validate read-only queries (only SELECT allowed)
+- Implemented recordQueryHistory() to save query execution to query_history table
+- Created QueryV1Controller with endpoints:
+  - POST /api/v1/query - Execute SQL query with optional limit parameter
+  - GET /api/v1/query/history - Get recent query history (default 20, max 100)
+- Results are limited to 1000 rows max to prevent memory issues
+- Vector columns are truncated for display (shows [N-dim vector])
+- Error handling with friendly messages for invalid SQL, missing tables, etc.
+- All endpoints require JWT authentication via @Authorized() decorator
+- Both server and web builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/server/src/services/query.service.ts (new)
+- apps/server/src/controllers/v1/query.controller.ts (new)
+- apps/server/src/controllers/index.ts
+
+**Learnings for future iterations:**
+- Use LanceDbService injected via TypeDI to access admin database tables
+- Query history recording uses the same LanceDbService.openTable('query_history') pattern
+- SQL parsing uses regex to extract FROM, WHERE, ORDER BY, and LIMIT clauses
+- Only SELECT queries are allowed for security (read-only access)
+- Query execution time is measured using Date.now() before and after query
+- Failed queries are also recorded to history with error message
+---
