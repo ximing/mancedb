@@ -55,6 +55,16 @@ export interface DropColumnResult {
   version: number;
 }
 
+export interface RenameTableResult {
+  oldName: string;
+  newName: string;
+}
+
+export interface DeleteTableResult {
+  name: string;
+  deleted: boolean;
+}
+
 @Service()
 export class TableService {
   constructor(private connectionService: ConnectionService) {}
@@ -605,6 +615,89 @@ export class TableService {
         };
       } finally {
         table.close();
+      }
+    } finally {
+      db.close();
+    }
+  }
+
+  /**
+   * Delete a table from the database
+   */
+  async deleteTable(connectionId: string, tableName: string): Promise<DeleteTableResult> {
+    const db = await this.connectToDatabase(connectionId);
+    try {
+      // Check if table exists
+      const tableNames = await db.tableNames();
+      if (!tableNames.includes(tableName)) {
+        throw new Error(`Table '${tableName}' not found`);
+      }
+
+      // Delete the table using LanceDB's dropTable method
+      await db.dropTable(tableName);
+
+      return {
+        name: tableName,
+        deleted: true,
+      };
+    } finally {
+      db.close();
+    }
+  }
+
+  /**
+   * Rename a table
+   * LanceDB doesn't have a native rename method, so we create a new table,
+   * copy the data, and drop the old one.
+   */
+  async renameTable(connectionId: string, oldName: string, newName: string): Promise<RenameTableResult> {
+    const db = await this.connectToDatabase(connectionId);
+    try {
+      // Check if old table exists
+      const tableNames = await db.tableNames();
+      if (!tableNames.includes(oldName)) {
+        throw new Error(`Table '${oldName}' not found`);
+      }
+
+      // Check if new name already exists
+      if (tableNames.includes(newName)) {
+        throw new Error(`Table '${newName}' already exists`);
+      }
+
+      // Validate new table name format
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(newName)) {
+        throw new Error(
+          'Table name must start with letter or underscore and contain only letters, numbers, and underscores'
+        );
+      }
+
+      // Open the old table
+      const oldTable = await db.openTable(oldName);
+      try {
+        // Get the schema
+        const schema = await oldTable.schema();
+
+        // Get all data from the old table
+        const allData = await oldTable.query().toArray();
+
+        // Create new table with the same schema and data
+        await db.createTable({
+          name: newName,
+          schema,
+          data: allData,
+          mode: 'create',
+          existOk: false,
+        });
+
+        // Drop the old table
+        await db.dropTable(oldName);
+
+        return {
+          oldName,
+          newName,
+        };
+      } finally {
+        oldTable.close();
       }
     } finally {
       db.close();

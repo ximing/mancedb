@@ -1,7 +1,8 @@
-import { JsonController, Get, Post, Delete, Param, Req, QueryParam, Authorized, Body } from 'routing-controllers';
+import { JsonController, Get, Post, Put, Delete, Param, Req, QueryParam, Authorized, Body } from 'routing-controllers';
 import { Service } from 'typedi';
 import type { Request } from 'express';
 import { TableService, type FilterCondition, type AddColumnOptions } from '../../services/table.service.js';
+import type { DeleteTableResult, RenameTableResult } from '../../services/table.service.js';
 import { ResponseUtil } from '../../utils/response.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import type { ConnectionAuthInfo } from '../../types/express.js';
@@ -43,6 +44,20 @@ interface AddColumnResponseDto {
 interface DropColumnResponseDto {
   name: string;
   version: number;
+}
+
+interface RenameTableRequestDto {
+  newName: string;
+}
+
+interface RenameTableResponseDto {
+  oldName: string;
+  newName: string;
+}
+
+interface DeleteTableResponseDto {
+  name: string;
+  deleted: boolean;
 }
 
 @Service()
@@ -313,6 +328,109 @@ export class TableV1Controller {
         }
       }
       return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to drop column');
+    }
+  }
+
+  /**
+   * DELETE /api/v1/tables/:name
+   * Delete a table from the database
+   */
+  @Delete('/:name')
+  @Authorized()
+  async deleteTable(@Param('name') tableName: string, @Req() req: Request) {
+    try {
+      const user = req.user as ConnectionAuthInfo | undefined;
+      const connectionId = user?.connectionId;
+      if (!connectionId) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED, 'Connection authentication required');
+      }
+
+      const result = await this.tableService.deleteTable(connectionId, tableName);
+
+      const response: DeleteTableResponseDto = {
+        name: result.name,
+        deleted: result.deleted,
+      };
+
+      return ResponseUtil.success(response);
+    } catch (error) {
+      console.error('Delete table error:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          return ResponseUtil.error(ErrorCode.NOT_FOUND, error.message);
+        }
+        if (error.message.includes('not configured') || error.message.includes('incomplete')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+        if (error.message.includes('credentials')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+      }
+      return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to delete table');
+    }
+  }
+
+  /**
+   * PUT /api/v1/tables/:name/rename
+   * Rename a table
+   */
+  @Put('/:name/rename')
+  @Authorized()
+  async renameTable(
+    @Param('name') tableName: string,
+    @Body() body: RenameTableRequestDto,
+    @Req() req: Request
+  ) {
+    try {
+      const user = req.user as ConnectionAuthInfo | undefined;
+      const connectionId = user?.connectionId;
+      if (!connectionId) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED, 'Connection authentication required');
+      }
+
+      // Validate new name
+      if (!body.newName || !body.newName.trim()) {
+        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'New table name is required');
+      }
+
+      const newName = body.newName.trim();
+
+      // Validate table name format
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(newName)) {
+        return ResponseUtil.error(
+          ErrorCode.PARAMS_ERROR,
+          'Table name must start with letter or underscore and contain only letters, numbers, and underscores'
+        );
+      }
+
+      const result = await this.tableService.renameTable(connectionId, tableName, newName);
+
+      const response: RenameTableResponseDto = {
+        oldName: result.oldName,
+        newName: result.newName,
+      };
+
+      return ResponseUtil.success(response);
+    } catch (error) {
+      console.error('Rename table error:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          return ResponseUtil.error(ErrorCode.NOT_FOUND, error.message);
+        }
+        if (error.message.includes('already exists')) {
+          return ResponseUtil.error(ErrorCode.PARAMS_ERROR, error.message);
+        }
+        if (error.message.includes('Table name must start with')) {
+          return ResponseUtil.error(ErrorCode.PARAMS_ERROR, error.message);
+        }
+        if (error.message.includes('not configured') || error.message.includes('incomplete')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+        if (error.message.includes('credentials')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+      }
+      return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to rename table');
     }
   }
 }
