@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import type { UserInfoDto } from '@mancedb/dto';
 import { config } from '../config/config.js';
 import { Container } from 'typedi';
 import { UserService } from '../services/user.service.js';
+import { ConnectionAuthService } from '../services/connection-auth.service.js';
+import type { ConnectionAuthInfo } from '../types/express.js';
 
 // Whitelist paths that don't require authentication
-const WHITELIST_PATHS = ['/', '/api/v1/auth/login', '/api/v1/auth/register'];
+const WHITELIST_PATHS = ['/', '/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/connections/login', '/api/v1/auth/connections/refresh'];
 
 // Whitelist path prefixes for static assets and public resources
 const WHITELIST_PREFIXES = [
@@ -35,7 +36,11 @@ export const authHandler = async (req: Request, res: Response, next: NextFunctio
     }
 
     // Get token from cookie or Authorization header
-    const token = req.cookies?.mancedb_token || req.headers.authorization?.replace('Bearer ', '');
+    // Try connection token first, then regular user token
+    const token =
+      req.cookies?.mancedb_connection_token ||
+      req.headers.authorization?.replace('Bearer ', '') ||
+      req.cookies?.mancedb_token;
 
     if (!token) {
       return res.status(401).json({
@@ -44,30 +49,64 @@ export const authHandler = async (req: Request, res: Response, next: NextFunctio
       });
     }
 
-    // Verify the token
-    const decoded = jwt.verify(token, config.jwt.secret) as {
-      uid: string;
-    };
+    // Try to verify as connection token first
+    const connectionAuthService = Container.get(ConnectionAuthService);
+    const connectionPayload = connectionAuthService.verifyToken(token);
 
-    // Get user from database
-    const userService = Container.get(UserService);
-    const user = await userService.findUserByUid(decoded.uid);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not found',
-      });
+    if (connectionPayload) {
+      // Connection-based authentication
+      const authInfo: ConnectionAuthInfo = {
+        connectionId: connectionPayload.connectionId,
+        username: connectionPayload.username,
+        type: connectionPayload.type,
+      };
+      req.user = authInfo;
+      return next();
     }
 
-    // Add user information to request context
-    req.user = {
-      uid: user.uid,
-      email: user.email,
-      nickname: user.nickname,
-    };
+    // Try to verify as user token
+    try {
+      const decoded = jwt.verify(token, config.jwt.secret) as {
+        uid: string;
+      };
 
-    // Continue to the next middleware or route handler
-    next();
+      // Get user from database
+      const userService = Container.get(UserService);
+      const user = await userService.findUserByUid(decoded.uid);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+
+      // Add user information to request context
+      req.user = {
+        uid: user.uid,
+        email: user.email,
+        nickname: user.nickname,
+      };
+
+      // Continue to the next middleware or route handler
+      return next();
+    } catch (error) {
+      // Token verification failed
+      if (error instanceof jwt.JsonWebTokenError) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token',
+        });
+      }
+
+      if (error instanceof jwt.TokenExpiredError) {
+        return res.status(401).json({
+          success: false,
+          message: 'Token expired',
+        });
+      }
+
+      throw error;
+    }
   } catch (error) {
     // Handle token verification errors
     if (error instanceof jwt.JsonWebTokenError) {

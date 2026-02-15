@@ -200,3 +200,61 @@
 - Edit mode requires special handling - password/S3 keys are optional (leave blank to keep existing)
 - Use `Record<string, unknown>` instead of `any` for API response typing to avoid lint errors
 ---
+
+## 2026-02-16 - US-007 Complete
+- Created ConnectionLoginPage component with connection info display
+- Implemented login form with username and password fields
+- Added password show/hide toggle button for better UX
+- Login failure displays friendly error messages
+- Login success saves JWT to localStorage and navigates to database interface
+- Added "Back to Connections" link in header
+- Created ConnectionAuthService for managing connection-based authentication state
+- Created connection-auth.ts API file for login and token refresh
+- Added getConnectionById method to ConnectionService for loading connection details
+- Updated App.tsx to use ConnectionLoginPage component for /connections/:id/login route
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/web/src/pages/connection-login/connection-login.tsx (new)
+- apps/web/src/services/connection-auth.service.ts (new)
+- apps/web/src/api/connection-auth.ts (new)
+- apps/web/src/App.tsx
+- apps/web/src/services/connection.service.ts
+- apps/web/src/services/auth.service.ts
+
+**Learnings for future iterations:**
+- Connection-based auth stores JWT in localStorage with key `mancedb_connection_auth`
+- The ConnectionAuthService manages isAuthenticated state and current connection info
+- Login page uses useParams to get connection ID from URL
+- After successful login, user is redirected to `/connections/:id/database` (placeholder for now)
+- Use `useService(ConnectionService)` to access service methods in components
+- Password visibility toggle uses React state and conditional rendering
+---
+
+## 2026-02-16 - US-008 Complete
+- Implemented DatabaseService with methods to connect to user's LanceDB database
+- Created getTables() method to list all tables with row counts
+- Created getDatabaseInfo() method to return database statistics
+- Implemented DatabaseV1Controller with endpoints:
+  - GET /api/v1/database/tables - Returns all tables with name, rowCount, sizeBytes
+  - GET /api/v1/database/info - Returns database info including all tables
+- Updated auth-handler.ts to support connection-based JWT authentication
+- Added ConnectionAuthInfo type to express.ts for proper TypeScript typing
+- Both endpoints require JWT authentication via @Authorized() decorator
+- Database connections are properly closed after each operation
+
+**Files changed:**
+- apps/server/src/services/database.service.ts (new)
+- apps/server/src/controllers/v1/database.controller.ts (new)
+- apps/server/src/controllers/index.ts
+- apps/server/src/middlewares/auth-handler.ts
+- apps/server/src/types/express.ts
+
+**Learnings for future iterations:**
+- The auth-handler now supports both user tokens (mancedb_token) and connection tokens (mancedb_connection_token)
+- Connection tokens are verified first using ConnectionAuthService.verifyToken()
+- Use `ConnectionAuthInfo` type when accessing req.user in connection-authenticated routes
+- LanceDB connections should be closed after use to avoid resource leaks
+- The `db.tableNames()` method returns all table names in the database
+- The `table.countRows()` method returns the number of rows in a table
+---
