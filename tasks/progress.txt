@@ -144,3 +144,32 @@
 - Cookie is set with httpOnly, secure in production, and 24-hour maxAge
 - ConnectionService.verifyPassword is reused for password checking
 ---
+
+## 2026-02-16 - US-005 Complete
+- Created Connection DTO types (ConnectionDto, CreateConnectionDto, UpdateConnectionDto, TestConnectionResponseDto)
+- Created Connection API functions for all CRUD operations and connection testing
+- Created ConnectionService using @rabjs/react Service class for state management
+- Implemented ConnectionListPage component with:
+  - Grid layout showing connection cards with name, type, path, last connected time
+  - Search/filter functionality by name, type, path, or bucket
+  - Delete connection with confirmation modal
+  - Empty state with CTA to create first connection
+  - Loading states and error handling
+- Added placeholder routes for /connections/new and /connections/:id/login
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- packages/dto/src/connection.ts (new)
+- packages/dto/src/index.ts
+- apps/web/src/api/connection.ts (new)
+- apps/web/src/services/connection.service.ts (new)
+- apps/web/src/pages/connections/connection-list.tsx (new)
+- apps/web/src/App.tsx
+
+**Learnings for future iterations:**
+- Use @rabjs/react's `view()` HOC for reactive components and `useService()` to access services
+- Service class from @rabjs/react automatically makes all methods actions (batch updates)
+- Connection cards show different icons/colors for Local (blue) vs S3 (purple) types
+- The delete button appears on hover using Tailwind's `group-hover:opacity-100`
+- Use `connection-list.tsx` as the main entry point for connection management
+---

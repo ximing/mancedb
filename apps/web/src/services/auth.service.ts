@@ -24,10 +24,11 @@ export class AuthService extends Service {
 
   async login(email: string, password: string): Promise<boolean> {
     const response = await loginApi({ email, password });
-    if (response.code === 0 && (response.data as any).token) {
-      this.token = (response.data as any).token;
+    const responseData = response.data as Record<string, unknown>;
+    if (response.code === 0 && responseData.token && typeof responseData.token === 'string') {
+      this.token = responseData.token;
       this.isAuthenticated = true;
-      localStorage.setItem('token', (response.data as any).token);
+      localStorage.setItem('token', responseData.token);
       return true;
     }
     return false;
@@ -35,10 +36,11 @@ export class AuthService extends Service {
 
   async register(email: string, password: string, nickname?: string): Promise<boolean> {
     const response = await registerApi({ email, password, nickname });
-    if (response.code === 0 && (response.data as any).token) {
-      this.token = (response.data as any).token;
+    const responseData = response.data as Record<string, unknown>;
+    if (response.code === 0 && responseData.token && typeof responseData.token === 'string') {
+      this.token = responseData.token;
       this.isAuthenticated = true;
-      localStorage.setItem('token', (response.data as any).token);
+      localStorage.setItem('token', responseData.token);
       return true;
     }
     return false;

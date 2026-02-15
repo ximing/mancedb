@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import AuthPage from './pages/auth';
 import { ConnectionListPage } from './pages/connections/connection-list';
+import { ConnectionFormPage } from './pages/connections/connection-form';
 import { ProtectedRoute } from './components/protected-route';
 
 function App() {
@@ -16,15 +17,20 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Placeholder routes for future implementation */}
+        {/* Connection form routes */}
         <Route
           path="/connections/new"
           element={
             <ProtectedRoute>
-              <div className="p-8">
-                <h1 className="text-2xl font-bold">Create Connection</h1>
-                <p className="mt-4 text-gray-600">Connection form coming soon (US-006).</p>
-              </div>
+              <ConnectionFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/connections/:id/edit"
+          element={
+            <ProtectedRoute>
+              <ConnectionFormPage />
             </ProtectedRoute>
           }
         />
