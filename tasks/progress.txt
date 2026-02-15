@@ -574,6 +574,26 @@
 - Vector dimension should be validated (positive number, reasonable max like 10000)
 ---
 
+## 2026-02-16 - US-020 Complete
+- Implemented deleteTable() method in TableService using LanceDB's dropTable()
+- Implemented renameTable() method in TableService (creates new table, copies data, drops old)
+- Added DELETE /api/v1/tables/:name endpoint for deleting tables
+- Added PUT /api/v1/tables/:name/rename endpoint for renaming tables
+- Added proper validation for table name format (alphanumeric and underscore)
+- Added error handling for table not found and duplicate name cases
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/server/src/services/table.service.ts
+- apps/server/src/controllers/v1/table.controller.ts
+
+**Learnings for future iterations:**
+- LanceDB Connection doesn't have a native renameTable() method
+- Table rename is implemented by: create new table with same schema → copy all data → drop old table
+- This approach preserves the schema but may be slow for large tables
+- Consider adding a warning in UI for large table renames
+---
+
 ## 2026-02-16 - US-019 Complete
 - Created table-schema.ts API with addColumn and dropColumn functions
 - Extended DatabaseService with addColumnToTable and dropColumnFromTable methods
@@ -605,4 +625,34 @@
 - Column name validation must check for duplicates against current schema
 - Vector dimension field is conditionally rendered based on type selection
 - Use radio cards for type selection for better UX than dropdown
+---
+
+## 2026-02-16 - US-021 Complete
+- Added deleteTable and renameTable API functions in table.ts
+- Extended DatabaseService with table management state and methods:
+  - isDeletingTable, isRenamingTable flags
+  - tableError, tableSuccessMessage for feedback
+  - deleteTable() and renameTable() methods
+  - clearTableMessages() method
+- Updated MainLayout component with table management UI:
+  - Added action menu (three dots) on table list items, visible on hover
+  - Menu contains Rename and Delete options
+  - Delete modal requires typing table name for confirmation
+  - Rename modal with validation for table name format
+  - Error display for both operations
+  - Tables list auto-updates after successful operation
+  - Selected table is cleared if deleted table was selected
+- Both server and web builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/web/src/api/table.ts
+- apps/web/src/services/database.service.ts
+- apps/web/src/pages/database/components/main-layout.tsx
+
+**Learnings for future iterations:**
+- Use `useRef` with click-outside handler to close dropdown menus
+- Group-related actions in a dropdown menu that appears on hover
+- Delete confirmation with text input provides extra safety for destructive actions
+- Table rename updates both the tables list and selected table state
+- Form validation in modals should clear errors when user makes changes
 ---

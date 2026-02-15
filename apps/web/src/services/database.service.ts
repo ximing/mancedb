@@ -1,6 +1,6 @@
 import { Service } from '@rabjs/react';
 import { getTables, getDatabaseInfo } from '../api/database';
-import { getTableSchema } from '../api/table';
+import { getTableSchema, deleteTable, renameTable } from '../api/table';
 import { getTableData, type TableDataResult, type FilterCondition, type FilterOperator } from '../api/table-data';
 import { executeQuery, getQueryHistory, type ExecuteQueryResult, type QueryHistoryEntry } from '../api/query';
 import { addColumn, dropColumn, type AddColumnRequest, type ColumnType } from '../api/table-schema';
@@ -88,6 +88,12 @@ export class DatabaseService extends Service {
   isDroppingColumn = false;
   columnError: string | null = null;
   columnSuccessMessage: string | null = null;
+
+  // Table management state
+  isDeletingTable = false;
+  isRenamingTable = false;
+  tableError: string | null = null;
+  tableSuccessMessage: string | null = null;
 
   /**
    * Load all tables from the database
@@ -547,6 +553,85 @@ export class DatabaseService extends Service {
       return false;
     } finally {
       this.isDroppingColumn = false;
+    }
+  }
+
+  /**
+   * Clear table error and success messages
+   */
+  clearTableMessages(): void {
+    this.tableError = null;
+    this.tableSuccessMessage = null;
+  }
+
+  /**
+   * Delete a table
+   */
+  async deleteTable(tableName: string): Promise<boolean> {
+    this.isDeletingTable = true;
+    this.tableError = null;
+    this.tableSuccessMessage = null;
+
+    try {
+      const response = await deleteTable(tableName);
+
+      if (response.code === 0) {
+        this.tableSuccessMessage = `Table '${tableName}' deleted successfully`;
+        // Remove from tables list
+        this.tables = this.tables.filter(t => t.name !== tableName);
+        // Clear selected table if it was the deleted one
+        if (this.selectedTable === tableName) {
+          this.selectedTable = null;
+          this.currentSchema = null;
+        }
+        return true;
+      } else {
+        this.tableError = response.message || 'Failed to delete table';
+        return false;
+      }
+    } catch (err) {
+      this.tableError = err instanceof Error ? err.message : 'Failed to delete table';
+      return false;
+    } finally {
+      this.isDeletingTable = false;
+    }
+  }
+
+  /**
+   * Rename a table
+   */
+  async renameTable(tableName: string, newName: string): Promise<boolean> {
+    this.isRenamingTable = true;
+    this.tableError = null;
+    this.tableSuccessMessage = null;
+
+    try {
+      const response = await renameTable(tableName, newName);
+
+      if (response.code === 0) {
+        this.tableSuccessMessage = `Table renamed from '${tableName}' to '${newName}'`;
+        // Update tables list
+        const tableIndex = this.tables.findIndex(t => t.name === tableName);
+        if (tableIndex !== -1) {
+          this.tables[tableIndex].name = newName;
+        }
+        // Update selected table if it was the renamed one
+        if (this.selectedTable === tableName) {
+          this.selectedTable = newName;
+          if (this.currentSchema) {
+            this.currentSchema.name = newName;
+          }
+        }
+        return true;
+      } else {
+        this.tableError = response.message || 'Failed to rename table';
+        return false;
+      }
+    } catch (err) {
+      this.tableError = err instanceof Error ? err.message : 'Failed to rename table';
+      return false;
+    } finally {
+      this.isRenamingTable = false;
     }
   }
 }
