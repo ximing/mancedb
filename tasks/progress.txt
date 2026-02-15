@@ -70,3 +70,24 @@
 - The project uses pnpm workspaces with turbo for build orchestration
 - Server build outputs to dist/, web build outputs to server/public/
 ---
+
+## 2026-02-15 - US-002 Complete
+- Created connections table schema with all required fields including encrypted S3 credentials
+- Created query_history table schema for tracking SQL execution history
+- Added ConnectionRecord and QueryHistoryRecord TypeScript interfaces
+- Created migration script 003-admin-tables.ts following existing migration pattern
+- Registered both migrations in the index.ts
+- Both server and web typecheck pass
+
+**Files changed:**
+- apps/server/src/models/db/schema.ts
+- apps/server/src/migrations/scripts/003-admin-tables.ts (new)
+- apps/server/src/migrations/scripts/index.ts
+
+**Learnings for future iterations:**
+- LanceDB uses Apache Arrow schemas - use Utf8, Int32, Timestamp types from apache-arrow package
+- Timestamp fields use TimeUnit.MILLISECOND for millisecond precision
+- Migration version numbers must be unique per table
+- Use createEmptyTable to create tables with explicit schemas
+- All nullable fields should have `true` as the third parameter in Field constructor
+---
