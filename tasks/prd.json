@@ -188,7 +188,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "Schema 查看是核心功能"
     },
     {

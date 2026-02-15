@@ -3,8 +3,8 @@ import AuthPage from './pages/auth';
 import { ConnectionListPage } from './pages/connections/connection-list';
 import { ConnectionFormPage } from './pages/connections/connection-form';
 import { ConnectionLoginPage } from './pages/connection-login/connection-login';
-import { DatabaseBrowserPage } from './pages/database/database-browser';
 import { MainLayout } from './pages/database/components/main-layout';
+import { DatabaseContent } from './pages/database/components/database-content';
 import { ProtectedRoute } from './components/protected-route';
 import { ConnectionProtectedRoute } from './components/connection-protected-route';
 
@@ -53,7 +53,7 @@ function App() {
             <ProtectedRoute>
               <ConnectionProtectedRoute>
                 <MainLayout>
-                  <DatabaseBrowserPage />
+                  <DatabaseContent />
                 </MainLayout>
               </ConnectionProtectedRoute>
             </ProtectedRoute>

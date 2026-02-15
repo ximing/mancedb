@@ -1,5 +1,6 @@
 import { Service } from '@rabjs/react';
 import { getTables, getDatabaseInfo } from '../api/database';
+import { getTableSchema } from '../api/table';
 
 export interface TableInfo {
   name: string;
@@ -15,6 +16,20 @@ export interface DatabaseInfo {
   tables: TableInfo[];
 }
 
+export interface ColumnInfo {
+  name: string;
+  type: string;
+  nullable: boolean;
+  vectorDimension?: number;
+}
+
+export interface TableSchema {
+  name: string;
+  columns: ColumnInfo[];
+  rowCount: number;
+  sizeBytes: number;
+}
+
 export class DatabaseService extends Service {
   tables: TableInfo[] = [];
   databaseInfo: DatabaseInfo | null = null;
@@ -22,6 +37,12 @@ export class DatabaseService extends Service {
   error: string | null = null;
   selectedTable: string | null = null;
   sidebarCollapsed = false;
+
+  // Table schema state
+  currentSchema: TableSchema | null = null;
+  isLoadingSchema = false;
+  schemaError: string | null = null;
+  activeTab: 'schema' | 'data' = 'schema';
 
   /**
    * Load all tables from the database
@@ -97,6 +118,60 @@ export class DatabaseService extends Service {
    */
   async refresh(): Promise<void> {
     await this.loadDatabaseInfo();
+  }
+
+  /**
+   * Load table schema
+   */
+  async loadTableSchema(tableName: string): Promise<void> {
+    this.isLoadingSchema = true;
+    this.schemaError = null;
+    try {
+      const response = await getTableSchema(tableName);
+      if (response.code === 0) {
+        this.currentSchema = response.data;
+      } else {
+        this.schemaError = 'Failed to load table schema';
+      }
+    } catch (err) {
+      this.schemaError = err instanceof Error ? err.message : 'Failed to load table schema';
+    } finally {
+      this.isLoadingSchema = false;
+    }
+  }
+
+  /**
+   * Refresh table schema
+   */
+  async refreshTableSchema(): Promise<void> {
+    if (this.selectedTable) {
+      await this.loadTableSchema(this.selectedTable);
+    }
+  }
+
+  /**
+   * Clear schema error
+   */
+  clearSchemaError(): void {
+    this.schemaError = null;
+  }
+
+  /**
+   * Set active tab
+   */
+  setActiveTab(tab: 'schema' | 'data'): void {
+    this.activeTab = tab;
+  }
+
+  /**
+   * Format bytes to human readable string
+   */
+  formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }
 

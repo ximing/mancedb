@@ -3,6 +3,9 @@
 - Service class from @rabjs/react is already observable - no need for @Action decorator on methods
 - All Service methods are automatically actions (batch updates) unless marked with @SyncAction
 - Keep auth.service.ts and theme.service.ts as they are needed for the auth flow
+- Use different icon/color combinations for data types: string (green), number (blue), boolean (purple), vector (orange), date (cyan), binary (gray)
+- LanceDB Arrow types need special parsing - fixed_size_list contains vector dimensions
+- Table schema is fetched via GET /api/v1/tables/:name/schema endpoint
 
 ## 2026-02-15 - Initial Setup
 - Created branch `ralph/lancedb-admin`
@@ -324,4 +327,37 @@
 - Use regex to extract vector dimension from type string: /fixed_size_list<([^,]+),\s*(\d+)>/
 - Table size estimation is needed since LanceDB doesn't provide direct size API
 - Different Arrow types need different byte size estimates for size calculation
+---
+
+## 2026-02-16 - US-011 Complete
+- Created table.ts API file for fetching table schema from GET /api/v1/tables/:name/schema
+- Extended DatabaseService with:
+  - ColumnInfo and TableSchema interfaces
+  - currentSchema, isLoadingSchema, schemaError state
+  - loadTableSchema() and refreshTableSchema() methods
+  - formatBytes() utility for human-readable sizes
+- Created TableSchemaView component with:
+  - Table info card showing name, row count, estimated size, column count
+  - Refresh button to reload schema
+  - Columns table with name, data type, nullable, and vector dimension info
+  - Type-specific icons and colors for different data types
+  - Loading and error states
+- Created DatabaseContent component to switch between DatabaseBrowserPage and TableSchemaView
+- Updated App.tsx to use DatabaseContent instead of DatabaseBrowserPage directly
+- Clicking a table in sidebar now shows its schema view
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/web/src/api/table.ts (new)
+- apps/web/src/services/database.service.ts
+- apps/web/src/pages/database/components/table-schema.tsx (new)
+- apps/web/src/pages/database/components/database-content.tsx (new)
+- apps/web/src/App.tsx
+
+**Learnings for future iterations:**
+- Use getTypeStyle() helper to get icon and color classes for different data types
+- Vector columns show dimension count as a badge in the properties column
+- The TableSchemaView component takes tableName as a prop and loads schema on mount
+- DatabaseContent acts as a router within the database view - shows browser when no table selected, schema when table selected
+- formatBytes() helper converts bytes to human-readable format (B, KB, MB, GB, TB)
 ---
