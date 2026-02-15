@@ -91,3 +91,56 @@
 - Use createEmptyTable to create tables with explicit schemas
 - All nullable fields should have `true` as the third parameter in Field constructor
 ---
+
+## 2026-02-15 - US-003 Complete
+- Implemented ConnectionService with full CRUD operations
+- Created AES-256-GCM encryption for S3 credentials using crypto module
+- Created bcrypt password hashing for database authentication
+- Created ConnectionV1Controller with all required REST endpoints:
+  - POST /api/v1/connections - Create connection with validation
+  - GET /api/v1/connections - List all connections (no sensitive fields)
+  - GET /api/v1/connections/:id - Get single connection details
+  - PUT /api/v1/connections/:id - Update connection
+  - DELETE /api/v1/connections/:id - Delete connection using LanceDB delete
+  - POST /api/v1/connections/:id/test - Test connection to LanceDB
+- All endpoints return unified response format via ResponseUtil
+- Sensitive fields (s3AccessKey, s3SecretKey, dbPasswordHash) are encrypted and never returned in public APIs
+- Server and web builds pass typecheck
+
+**Files changed:**
+- apps/server/src/services/connection.service.ts (new)
+- apps/server/src/controllers/v1/connection.controller.ts (new)
+- apps/server/src/controllers/index.ts
+
+**Learnings for future iterations:**
+- LanceDB Table has a `delete(whereClause)` method for removing records
+- Use `scryptSync` to derive encryption key from JWT secret for AES encryption
+- Store IV and authTag alongside encrypted data for AES-GCM decryption
+- bcrypt is already available in the project for password hashing
+- Always escape single quotes in LanceDB where clauses to prevent injection issues
+- Use `table.update()` for partial updates and `table.delete()` for deletions
+---
+
+## 2026-02-16 - US-004 Complete
+- Implemented ConnectionAuthService with authenticate, refreshToken, and verifyToken methods
+- Added POST /api/v1/auth/connections/login endpoint for connection-based authentication
+- Added POST /api/v1/auth/connections/refresh endpoint for token refresh
+- Created ConnectionLoginDto and RefreshTokenDto in the DTO package
+- JWT tokens include connectionId, username, and type with 24-hour expiration
+- Password verification uses bcrypt compare from ConnectionService
+- Returns 401 with friendly error messages on authentication failure
+- Sets httpOnly cookie with the token for security
+
+**Files changed:**
+- packages/dto/src/auth.ts
+- apps/server/src/services/connection-auth.service.ts (new)
+- apps/server/src/services/connection.service.ts
+- apps/server/src/controllers/v1/auth.controller.ts
+
+**Learnings for future iterations:**
+- Connection-based auth uses separate endpoints: /api/v1/auth/connections/login and /refresh
+- JWT payload includes connectionId, username, and type for easy access in subsequent requests
+- The verifyToken method returns null on failure - useful for middleware authentication
+- Cookie is set with httpOnly, secure in production, and 24-hour maxAge
+- ConnectionService.verifyPassword is reused for password checking
+---
