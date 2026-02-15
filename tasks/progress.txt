@@ -710,3 +710,34 @@
 - After deletion, refresh table data, schema (for row count), and database info
 - Selected rows are highlighted with primary color background
 ---
+
+## 2026-02-16 - US-024 Complete
+- Implemented health check endpoint at GET /api/v1/health
+- Added healthCheck() method to LanceDbService to verify database connectivity
+- Updated Dockerfile with:
+  - Multi-stage build (builder + production)
+  - System dependencies for building native modules (python3, make, g++)
+  - System dependencies for LanceDB runtime (libssl3, ca-certificates)
+  - Proper health check using the /api/v1/health endpoint
+  - Production dependencies only in final image
+- Updated docker-compose.yml with simplified configuration for LanceDB Admin:
+  - Removed old backup/attachment/S3/OpenAI configuration
+  - Only keeps essential config: JWT, CORS, LanceDB local storage, locale
+  - Volume mount for lancedb_data directory
+  - Proper health check configuration
+- Both server and web builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/server/src/controllers/v1/health.controller.ts (new)
+- apps/server/src/sources/lancedb.ts
+- apps/server/src/controllers/index.ts
+- Dockerfile
+- docker-compose.yml
+
+**Learnings for future iterations:**
+- LanceDB requires libssl3 for its native modules to work properly in containers
+- Health check endpoint should verify database connectivity, not just server status
+- Use process.exit() in health check CMD to return proper exit codes (0 = healthy, 1 = unhealthy)
+- The error method in ResponseUtil takes (code, msg) not (msg, code, errorCode)
+- DB_CONNECT_ERROR error code is appropriate for health check failures
+---

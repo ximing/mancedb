@@ -238,4 +238,23 @@ export class LanceDbService {
       throw error;
     }
   }
+
+  /**
+   * Health check - verify database connection is working
+   * Returns true if healthy, false otherwise
+   */
+  async healthCheck(): Promise<boolean> {
+    if (!this.initialized) {
+      return false;
+    }
+
+    try {
+      // Try to list tables as a basic connectivity test
+      await this.db.tableNames();
+      return true;
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return false;
+    }
+  }
 }

@@ -1,6 +1,13 @@
 # Build stage
 FROM node:20-slim AS builder
 
+# Install system dependencies required for building native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install pnpm
 RUN npm install -g pnpm@10.22.0
 
@@ -35,6 +42,12 @@ FROM node:20-slim
 
 WORKDIR /app
 
+# Install system dependencies required for LanceDB native modules
+RUN apt-get update && apt-get install -y \
+    libssl3 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install pnpm for production
 RUN npm install -g pnpm@10.22.0
 
@@ -58,9 +71,9 @@ ENV PORT=3000
 # Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+# Health check - uses the /api/v1/health endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start server
 CMD ["node", "apps/server/dist/index.js"]
