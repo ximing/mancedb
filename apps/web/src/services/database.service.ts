@@ -3,6 +3,7 @@ import { getTables, getDatabaseInfo } from '../api/database';
 import { getTableSchema } from '../api/table';
 import { getTableData, type TableDataResult, type FilterCondition, type FilterOperator } from '../api/table-data';
 import { executeQuery, getQueryHistory, type ExecuteQueryResult, type QueryHistoryEntry } from '../api/query';
+import { addColumn, dropColumn, type AddColumnRequest, type ColumnType } from '../api/table-schema';
 
 export interface TableInfo {
   name: string;
@@ -81,6 +82,12 @@ export class DatabaseService extends Service {
   queryHistory: QueryHistoryEntry[] = [];
   isLoadingHistory = false;
   historyError: string | null = null;
+
+  // Column management state
+  isAddingColumn = false;
+  isDroppingColumn = false;
+  columnError: string | null = null;
+  columnSuccessMessage: string | null = null;
 
   /**
    * Load all tables from the database
@@ -471,6 +478,76 @@ export class DatabaseService extends Service {
     });
 
     this.sqlQuery = formatted;
+  }
+
+  /**
+   * Clear column error and success messages
+   */
+  clearColumnMessages(): void {
+    this.columnError = null;
+    this.columnSuccessMessage = null;
+  }
+
+  /**
+   * Add a new column to the current table
+   */
+  async addColumnToTable(tableName: string, name: string, type: ColumnType, vectorDimension?: number): Promise<boolean> {
+    this.isAddingColumn = true;
+    this.columnError = null;
+    this.columnSuccessMessage = null;
+
+    try {
+      const request: AddColumnRequest = {
+        name: name.trim(),
+        type,
+        vectorDimension: type === 'vector' ? vectorDimension : undefined,
+      };
+
+      const response = await addColumn(tableName, request);
+
+      if (response.code === 0) {
+        this.columnSuccessMessage = `Column '${name}' added successfully`;
+        // Refresh the schema to show the new column
+        await this.refreshTableSchema();
+        return true;
+      } else {
+        this.columnError = response.message || 'Failed to add column';
+        return false;
+      }
+    } catch (err) {
+      this.columnError = err instanceof Error ? err.message : 'Failed to add column';
+      return false;
+    } finally {
+      this.isAddingColumn = false;
+    }
+  }
+
+  /**
+   * Drop a column from the current table
+   */
+  async dropColumnFromTable(tableName: string, columnName: string): Promise<boolean> {
+    this.isDroppingColumn = true;
+    this.columnError = null;
+    this.columnSuccessMessage = null;
+
+    try {
+      const response = await dropColumn(tableName, columnName);
+
+      if (response.code === 0) {
+        this.columnSuccessMessage = `Column '${columnName}' deleted successfully`;
+        // Refresh the schema to show the updated columns
+        await this.refreshTableSchema();
+        return true;
+      } else {
+        this.columnError = response.message || 'Failed to delete column';
+        return false;
+      }
+    } catch (err) {
+      this.columnError = err instanceof Error ? err.message : 'Failed to delete column';
+      return false;
+    } finally {
+      this.isDroppingColumn = false;
+    }
   }
 }
 

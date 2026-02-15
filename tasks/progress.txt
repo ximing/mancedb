@@ -573,3 +573,36 @@
 - Column name validation should allow alphanumeric and underscore only, starting with letter or underscore
 - Vector dimension should be validated (positive number, reasonable max like 10000)
 ---
+
+## 2026-02-16 - US-019 Complete
+- Created table-schema.ts API with addColumn and dropColumn functions
+- Extended DatabaseService with addColumnToTable and dropColumnFromTable methods
+- Updated TableSchemaView component with:
+  - Add Column button in table info header
+  - Add Column modal with form:
+    - Column name input with validation (regex: /^[a-zA-Z_][a-zA-Z0-9_]*$/)
+    - Data type selector with radio cards (string, int64, float64, binary, vector)
+    - Vector dimension input (shown only for vector type)
+    - Note about nullable columns (LanceDB limitation)
+    - Success/error message display
+  - Delete Column button in each row's Actions column
+  - Delete Column confirmation modal with warning
+- Column management state in DatabaseService:
+  - isAddingColumn, isDroppingColumn flags
+  - columnError, columnSuccessMessage for feedback
+  - clearColumnMessages() method
+- Both server and web builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/web/src/api/table-schema.ts (new)
+- apps/web/src/services/database.service.ts
+- apps/web/src/pages/database/components/table-schema.tsx
+
+**Learnings for future iterations:**
+- Modal state is managed locally in the component using useState
+- Form validation happens on blur and before submit
+- Success messages auto-dismiss the modal after a short delay (1.5s)
+- Column name validation must check for duplicates against current schema
+- Vector dimension field is conditionally rendered based on type selection
+- Use radio cards for type selection for better UX than dropdown
+---
