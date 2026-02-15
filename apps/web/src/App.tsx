@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router';
 import AuthPage from './pages/auth';
 import { ConnectionListPage } from './pages/connections/connection-list';
 import { ConnectionFormPage } from './pages/connections/connection-form';
@@ -7,10 +7,15 @@ import { MainLayout } from './pages/database/components/main-layout';
 import { DatabaseContent } from './pages/database/components/database-content';
 import { ProtectedRoute } from './components/protected-route';
 import { ConnectionProtectedRoute } from './components/connection-protected-route';
+import { isElectron } from './utils/environment';
+
+// Use HashRouter in Electron (file:// protocol doesn't support History API)
+// Use BrowserRouter in normal web environment
+const Router = isElectron() ? HashRouter : BrowserRouter;
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route
@@ -61,7 +66,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 

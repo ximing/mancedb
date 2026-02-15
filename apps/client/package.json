@@ -7,7 +7,9 @@
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "pnpm build:web && pnpm build:electron",
+    "build:web": "cd ../web && ELECTRON=true pnpm build",
+    "build:electron": "tsc -b && vite build",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "typecheck": "tsc -b --noEmit",

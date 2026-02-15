@@ -3,22 +3,37 @@ import path from 'node:path';
 
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1400,
+    height: 900,
+    minWidth: 1024,
+    minHeight: 768,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Enable web security but allow local file access
+      webSecurity: true,
     },
+    // Better window appearance
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    show: false, // Show when ready to prevent flash
+  });
+
+  // Show window when content is ready
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
   });
 
   // Load the web app
   if (process.env.VITE_DEV_SERVER_URL) {
+    // Development: load from web app dev server
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    // In production, load from the built web app
-    mainWindow.loadFile(path.join(__dirname, '../../web/dist/index.html'));
+    // Production: load from the built web app
+    // The web app is built to apps/client/dist/web
+    const webAppPath = path.join(__dirname, '../web/index.html');
+    mainWindow.loadFile(webAppPath);
   }
 };
 
