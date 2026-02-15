@@ -1,0 +1,10 @@
+import type { UserInfoDto } from '@mancedb/dto';
+
+// Extend Express Request type to include user information
+declare global {
+  namespace Express {
+    interface Request {
+      user?: UserInfoDto;
+    }
+  }
+}

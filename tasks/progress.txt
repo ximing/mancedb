@@ -1,0 +1,72 @@
+## Codebase Patterns
+- Use `experimentalDecorators: true` in tsconfig for @rabjs/react decorators to work
+- Service class from @rabjs/react is already observable - no need for @Action decorator on methods
+- All Service methods are automatically actions (batch updates) unless marked with @SyncAction
+- Keep auth.service.ts and theme.service.ts as they are needed for the auth flow
+
+## 2026-02-15 - Initial Setup
+- Created branch `ralph/lancedb-admin`
+- Starting US-001: Clean up existing code
+
+## 2026-02-15 - US-001 Complete
+- Deleted backend controllers: memo.controller.ts, category.controller.ts, attachment.controller.ts, backup.controller.ts
+- Deleted backend services: memo.service.ts, category.service.ts, attachment.service.ts, backup.service.ts, backup-executor.ts, backup-worker.ts, memo-relation.service.ts, embedding.service.ts, multimodal-embedding.service.ts, scheduler.service.ts
+- Deleted frontend pages: home, gallery, ai-explore, settings
+- Deleted DTOs: memo.ts, category.ts, attachment.ts
+- Deleted API files: memo.ts, attachment.ts, export.ts
+- Deleted unified-storage-adapter folder
+- Updated schema.ts to only keep users and table_migrations
+- Updated migrations to only create users table
+- Updated lancedb.ts to remove references to deleted tables
+- Updated config.ts to remove backup and attachment config
+- Updated app.ts to remove backup and scheduler initialization
+- Updated controllers/index.ts to only export auth and user controllers
+- Updated DTO index.ts to only export auth, user, response
+- Simplified App.tsx to placeholder landing page
+- Updated auth page text to reflect new project name
+- Recreated auth.service.ts and theme.service.ts with proper @rabjs/react patterns
+- Fixed tsconfig.app.json to enable experimentalDecorators
+- Fixed login-form.tsx and register-form.tsx to match new service API
+- Fixed layout.tsx to use isDark as property not method
+- Build passes for both server and web
+
+**Files changed:**
+- apps/server/src/controllers/index.ts
+- apps/server/src/controllers/v1/memo.controller.ts (deleted)
+- apps/server/src/controllers/v1/category.controller.ts (deleted)
+- apps/server/src/controllers/v1/attachment.controller.ts (deleted)
+- apps/server/src/controllers/v1/backup.controller.ts (deleted)
+- apps/server/src/services/*.service.ts (multiple deleted)
+- apps/server/src/sources/lancedb.ts
+- apps/server/src/sources/unified-storage-adapter/ (deleted)
+- apps/server/src/models/db/schema.ts
+- apps/server/src/migrations/scripts/001-init.ts
+- apps/server/src/migrations/scripts/002-create-indexes.ts
+- apps/server/src/migrations/scripts/index.ts
+- apps/server/src/config/config.ts
+- apps/server/src/app.ts
+- apps/web/src/App.tsx
+- apps/web/src/main.tsx
+- apps/web/src/pages/ (multiple deleted)
+- apps/web/src/components/attachment-uploader.tsx (deleted)
+- apps/web/src/components/memo-editor-form.tsx (deleted)
+- apps/web/src/components/layout.tsx
+- apps/web/src/pages/auth/auth.tsx
+- apps/web/src/pages/auth/components/login-form.tsx
+- apps/web/src/pages/auth/components/register-form.tsx
+- apps/web/src/services/auth.service.ts (recreated)
+- apps/web/src/services/theme.service.ts (recreated)
+- apps/web/src/api/*.ts (multiple deleted)
+- apps/web/tsconfig.app.json
+- packages/dto/src/index.ts
+- packages/dto/src/memo.ts (deleted)
+- packages/dto/src/category.ts (deleted)
+- packages/dto/src/attachment.ts (deleted)
+
+**Learnings for future iterations:**
+- The @rabjs/react framework uses experimental decorators - must enable in tsconfig
+- Service class from rabjs is already observable, methods are automatically actions
+- When deleting files, be careful not to delete services that are still needed (auth, theme)
+- The project uses pnpm workspaces with turbo for build orchestration
+- Server build outputs to dist/, web build outputs to server/public/
+---

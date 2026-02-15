@@ -1,0 +1,440 @@
+{
+  "project": "LanceDB Admin",
+  "branchName": "ralph/lancedb-admin",
+  "description": "LanceDB 数据库管理工具 - 类似 Navicat 的 Web 管理界面，支持连接管理、表浏览、SQL 查询",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "清理现有项目代码 - 删除 memo/category/attachment/backup 相关代码",
+      "description": "作为开发者，我需要清理现有项目中不需要的代码，为新的管理工具腾出空间。",
+      "acceptanceCriteria": [
+        "删除 memo.controller.ts, category.controller.ts, attachment.controller.ts, backup.controller.ts",
+        "删除 memo.service.ts, category.service.ts, attachment.service.ts, backup.service.ts 及相关服务",
+        "删除前端 pages/memos, pages/categories, pages/gallery 等页面",
+        "删除相关的 DTO 定义（memo, category, attachment）",
+        "保留基础框架：Express 配置、LanceDB 连接层、用户认证基础",
+        "项目可以正常编译启动",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "先清理代码，避免后续开发受旧代码干扰"
+    },
+    {
+      "id": "US-002",
+      "title": "创建管理端数据库 Schema - connections 和 query_history 表",
+      "description": "作为开发者，我需要创建存储连接配置和查询历史的数据表结构。",
+      "acceptanceCriteria": [
+        "创建 connections 表：id, name, type, localPath, s3Bucket, s3Region, s3AccessKey(加密), s3SecretKey(加密), s3Endpoint, dbUsername, dbPasswordHash, createdAt, updatedAt, lastConnectedAt",
+        "创建 query_history 表：id, connectionId, sql, executedAt, executionTimeMs, rowCount, error",
+        "创建数据库迁移脚本并执行成功",
+        "表结构符合 LanceDB Arrow Schema 格式",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Schema 必须在 API 之前完成"
+    },
+    {
+      "id": "US-003",
+      "title": "实现连接管理后端 API - CRUD 和测试连接",
+      "description": "作为开发者，我需要后端 API 来管理数据库连接配置。",
+      "acceptanceCriteria": [
+        "POST /api/v1/connections - 创建连接（密码使用 bcrypt 加密，S3 key 使用 AES 加密）",
+        "GET /api/v1/connections - 获取连接列表（不返回敏感字段）",
+        "GET /api/v1/connections/:id - 获取单个连接详情",
+        "PUT /api/v1/connections/:id - 更新连接",
+        "DELETE /api/v1/connections/:id - 删除连接",
+        "POST /api/v1/connections/:id/test - 测试连接（验证 LanceDB 可连接）",
+        "所有端点返回统一响应格式",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "后端 API 完成后才能开发前端"
+    },
+    {
+      "id": "US-004",
+      "title": "实现登录认证后端 API",
+      "description": "作为开发者，我需要登录认证 API 来验证用户身份并发放 JWT。",
+      "acceptanceCriteria": [
+        "POST /api/v1/auth/login - 验证连接的用户名密码，返回 JWT",
+        "POST /api/v1/auth/refresh - 刷新 JWT Token",
+        "JWT 包含 connectionId 和用户信息",
+        "Token 有效期 24 小时",
+        "错误时返回 401 和友好错误信息",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "认证必须在其他 API 之前完成"
+    },
+    {
+      "id": "US-005",
+      "title": "实现连接管理前端页面 - 连接列表",
+      "description": "作为用户，我需要一个页面查看和管理所有保存的数据库连接。",
+      "acceptanceCriteria": [
+        "页面显示所有连接卡片/列表（名称、类型、最后连接时间）",
+        "支持搜索/筛选连接",
+        "点击连接跳转到登录页",
+        "有新建连接按钮",
+        "支持删除连接（需确认）",
+        "空状态显示引导用户创建连接",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "连接列表是应用入口"
+    },
+    {
+      "id": "US-006",
+      "title": "实现连接管理前端页面 - 创建/编辑连接表单",
+      "description": "作为用户，我需要一个表单来创建或编辑 LanceDB 连接配置。",
+      "acceptanceCriteria": [
+        "表单包含：连接名称、类型选择（Local/S3）",
+        "Local 类型：文件路径输入",
+        "S3 类型：bucket、region、accessKey、secretKey、endpoint（可选）",
+        "认证信息：用户名、密码",
+        "有测试连接按钮，显示测试结果",
+        "表单验证（必填项、格式检查）",
+        "创建/编辑成功后跳转到连接列表",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "创建连接后才能登录"
+    },
+    {
+      "id": "US-007",
+      "title": "实现登录认证前端页面",
+      "description": "作为用户，我需要在选择连接后输入用户名密码登录。",
+      "acceptanceCriteria": [
+        "页面显示选中的连接信息",
+        "登录表单：用户名、密码输入框",
+        "密码输入框支持显示/隐藏切换",
+        "登录失败显示错误提示",
+        "登录成功保存 JWT 到内存，跳转到主界面",
+        "有返回连接列表的链接",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "登录后进入主界面"
+    },
+    {
+      "id": "US-008",
+      "title": "实现数据库表列表后端 API",
+      "description": "作为开发者，我需要 API 获取数据库中的所有表信息。",
+      "acceptanceCriteria": [
+        "GET /api/v1/database/tables - 返回所有表名、行数、大小",
+        "GET /api/v1/database/info - 返回数据库统计信息",
+        "使用 LanceDB 原生 API 获取表信息",
+        "结果缓存以提高性能",
+        "需要 JWT 认证",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "表列表是主界面的核心"
+    },
+    {
+      "id": "US-009",
+      "title": "实现主界面布局 - 侧边栏和导航",
+      "description": "作为用户，我需要一个主界面布局来浏览数据库内容。",
+      "acceptanceCriteria": [
+        "左侧固定侧边栏：显示当前连接名、表列表",
+        "表列表可点击展开/收起",
+        "点击表名切换到该表的 Schema/数据视图",
+        "顶部工具栏：显示当前连接、刷新按钮、退出登录",
+        "主内容区显示当前选中的视图",
+        "响应式布局，侧边栏可收起",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "布局框架完成后添加具体功能"
+    },
+    {
+      "id": "US-010",
+      "title": "实现表结构查看后端 API",
+      "description": "作为开发者，我需要 API 获取表的详细 Schema 信息。",
+      "acceptanceCriteria": [
+        "GET /api/v1/tables/:name/schema - 返回列信息",
+        "返回：列名、Arrow 数据类型、是否 nullable、向量维度（如果是 fixed_size_list）",
+        "返回表的元数据：行数、文件大小、创建时间",
+        "处理表不存在的错误",
+        "需要 JWT 认证",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Schema API 用于前端展示"
+    },
+    {
+      "id": "US-011",
+      "title": "实现表结构查看前端页面",
+      "description": "作为用户，我需要查看表的详细结构信息。",
+      "acceptanceCriteria": [
+        "页面显示表的基本信息（行数、大小、创建时间）",
+        "表格显示所有列：名称、数据类型、nullable、向量维度",
+        "不同类型使用不同图标/颜色区分",
+        "有刷新按钮重新加载 Schema",
+        "切换到数据浏览的标签页",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Schema 查看是核心功能"
+    },
+    {
+      "id": "US-012",
+      "title": "实现表数据浏览后端 API - 分页和排序",
+      "description": "作为开发者，我需要 API 获取表的分页数据。",
+      "acceptanceCriteria": [
+        "GET /api/v1/tables/:name/data - 支持分页、排序",
+        "查询参数：page, pageSize, sortColumn, sortOrder",
+        "返回分页数据和总行数",
+        "限制最大返回行数防止内存溢出（默认 1000）",
+        "向量列返回摘要格式而非完整数据",
+        "需要 JWT 认证",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "数据浏览 API"
+    },
+    {
+      "id": "US-013",
+      "title": "实现表数据浏览前端页面 - 数据表格",
+      "description": "作为用户，我需要以表格形式浏览表中的数据。",
+      "acceptanceCriteria": [
+        "表格显示数据，支持横向滚动",
+        "向量列显示为维度摘要（如 [1536-dim vector]）",
+        "分页控件：每页 50/100/200 条可选",
+        "显示当前页码和总页数",
+        "支持按列排序（点击表头）",
+        "点击行可查看完整详情（JSON 弹窗）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "数据表格是核心功能"
+    },
+    {
+      "id": "US-014",
+      "title": "实现表数据过滤功能",
+      "description": "作为用户，我需要对表数据进行简单的过滤查询。",
+      "acceptanceCriteria": [
+        "数据表格上方有过滤输入框",
+        "支持文本列的包含过滤",
+        "支持数值列的范围过滤",
+        "支持日期列的范围过滤",
+        "多个过滤条件组合（AND 关系）",
+        "有过滤重置按钮",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "过滤功能增强数据浏览"
+    },
+    {
+      "id": "US-015",
+      "title": "实现 SQL 查询执行后端 API",
+      "description": "作为开发者，我需要 API 执行 LanceDB SQL 查询。",
+      "acceptanceCriteria": [
+        "POST /api/v1/query - 执行 SQL 查询",
+        "支持 LanceDB SQL 子集：SELECT, WHERE, ORDER BY, LIMIT",
+        "返回查询结果和执行时间",
+        "错误时返回友好错误信息",
+        "限制结果集大小（默认 1000 条）",
+        "记录查询历史到 query_history 表",
+        "需要 JWT 认证",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": "SQL 查询 API"
+    },
+    {
+      "id": "US-016",
+      "title": "实现 SQL 查询前端页面 - 编辑器",
+      "description": "作为用户，我需要一个 SQL 编辑器来编写和执行查询。",
+      "acceptanceCriteria": [
+        "SQL 编辑器支持语法高亮",
+        "执行按钮运行查询",
+        "显示查询执行时间和返回行数",
+        "结果显示在下方表格中",
+        "错误时显示友好错误信息",
+        "支持格式化 SQL",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "SQL 编辑器是核心功能"
+    },
+    {
+      "id": "US-017",
+      "title": "实现 SQL 查询历史和导出",
+      "description": "作为用户，我需要查看查询历史和导出查询结果。",
+      "acceptanceCriteria": [
+        "GET /api/v1/query/history - 返回最近 20 条查询历史",
+        "历史显示：SQL、执行时间、返回行数、执行时间戳",
+        "点击历史记录可快速填充到编辑器",
+        "支持将查询结果导出为 CSV",
+        "支持将查询结果导出为 JSON",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": "查询历史和导出功能"
+    },
+    {
+      "id": "US-018",
+      "title": "实现表结构修改后端 API - 添加/删除列",
+      "description": "作为开发者，我需要 API 来修改表结构。",
+      "acceptanceCriteria": [
+        "POST /api/v1/tables/:name/columns - 添加新列",
+        "支持 Arrow 类型：int64, float64, string, binary, fixed_size_list(向量)",
+        "向量列需要指定维度",
+        "DELETE /api/v1/tables/:name/columns/:col - 删除列",
+        "验证列名不重复",
+        "处理 LanceDB 的限制（只能添加 nullable 列）",
+        "需要 JWT 认证",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "表结构修改 API"
+    },
+    {
+      "id": "US-019",
+      "title": "实现表结构修改前端页面",
+      "description": "作为用户，我需要在界面上添加或删除列。",
+      "acceptanceCriteria": [
+        "Schema 页面有添加列按钮",
+        "添加列弹窗：列名输入、类型选择、向量维度（如果是向量）",
+        "类型选择包含所有支持的 Arrow 类型",
+        "删除列有确认弹窗",
+        "操作成功/失败都有 Toast 提示",
+        "操作后自动刷新 Schema 显示",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": "表结构修改界面"
+    },
+    {
+      "id": "US-020",
+      "title": "实现表管理后端 API - 删除/重命名表",
+      "description": "作为开发者，我需要 API 来删除或重命名表。",
+      "acceptanceCriteria": [
+        "DELETE /api/v1/tables/:name - 删除表",
+        "PUT /api/v1/tables/:name/rename - 重命名表（body: { newName: string }）",
+        "验证新表名不存在",
+        "删除表需要额外确认（不可恢复）",
+        "需要 JWT 认证",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": "表管理 API"
+    },
+    {
+      "id": "US-021",
+      "title": "实现表管理前端功能",
+      "description": "作为用户，我需要删除或重命名表。",
+      "acceptanceCriteria": [
+        "表列表有操作按钮（删除、重命名）",
+        "删除表需要输入表名二次确认",
+        "重命名表有弹窗输入新名称",
+        "操作后自动刷新表列表",
+        "Toast 提示操作结果",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": "表管理界面"
+    },
+    {
+      "id": "US-022",
+      "title": "实现数据删除后端 API",
+      "description": "作为开发者，我需要 API 来删除表中的记录。",
+      "acceptanceCriteria": [
+        "DELETE /api/v1/tables/:name/rows - 按 WHERE 条件删除",
+        "支持按 ID 删除单条记录",
+        "支持按条件批量删除",
+        "返回删除的行数",
+        "WHERE 条件使用 LanceDB 的 filter 语法",
+        "需要 JWT 认证",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": "数据删除 API"
+    },
+    {
+      "id": "US-023",
+      "title": "实现数据删除前端功能",
+      "description": "作为用户，我需要在数据浏览页面删除记录。",
+      "acceptanceCriteria": [
+        "数据表格每行有复选框支持多选",
+        "有删除选中行按钮",
+        "支持按当前过滤条件批量删除",
+        "删除前有确认弹窗显示影响行数",
+        "删除成功后刷新数据表格",
+        "Toast 提示删除结果",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": "数据删除界面"
+    },
+    {
+      "id": "US-024",
+      "title": "完善 Dockerfile 和部署配置",
+      "description": "作为运维人员，我需要完整的 Docker 配置来部署应用。",
+      "acceptanceCriteria": [
+        "Dockerfile 多阶段构建，最终镜像基于 node:20-slim",
+        "安装必要的系统依赖（用于 LanceDB）",
+        "构建前端并复制到服务器 public 目录",
+        "只安装生产依赖减小镜像体积",
+        "暴露 3000 端口",
+        "添加健康检查端点 /health",
+        "支持通过环境变量配置",
+        "Typecheck passes"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": "Docker 配置"
+    },
+    {
+      "id": "US-025",
+      "title": "创建 docker-compose.yml 和部署文档",
+      "description": "作为运维人员，我需要 docker-compose 配置和部署文档。",
+      "acceptanceCriteria": [
+        "docker-compose.yml 包含服务配置",
+        "配置卷挂载：lancedb_data、attachments、backups",
+        "配置环境变量文件",
+        "配置健康检查和重启策略",
+        "README 包含部署说明",
+        "包含环境变量说明文档",
+        "Typecheck passes"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": "部署文档"
+    }
+  ]
+}
