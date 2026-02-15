@@ -173,3 +173,30 @@
 - The delete button appears on hover using Tailwind's `group-hover:opacity-100`
 - Use `connection-list.tsx` as the main entry point for connection management
 ---
+
+## 2026-02-16 - US-006 Complete
+- Created ConnectionFormPage component with full create/edit functionality
+- Implemented type selector with visual cards for Local (blue) and S3 (purple) types
+- Added form sections: Connection Type, Basic Information, Authentication
+- Local type form: name, localPath, username, password
+- S3 type form: name, bucket, region, endpoint, accessKey, secretKey, username, password
+- Added form validation for required fields with error messages
+- Implemented test connection button with success/error result display
+- Edit mode loads existing connection data and supports partial updates
+- Password fields show/hide toggle for better UX
+- Form submission creates/updates connection and navigates back to list
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/web/src/pages/connections/connection-form.tsx (new)
+- apps/web/src/App.tsx
+- apps/web/src/services/auth.service.ts (fixed lint errors)
+
+**Learnings for future iterations:**
+- The form uses controlled inputs with React state for all fields
+- Type selector uses visual cards with different colors (blue for Local, purple for S3)
+- Form validation clears errors when fields are updated
+- Test connection creates a temporary connection then cleans up on failure
+- Edit mode requires special handling - password/S3 keys are optional (leave blank to keep existing)
+- Use `Record<string, unknown>` instead of `any` for API response typing to avoid lint errors
+---
