@@ -297,3 +297,31 @@
 - MainLayout loads connection details and database tables on mount
 - Tables are displayed with row counts from the database info API
 ---
+
+## 2026-02-16 - US-010 Complete
+- Implemented TableService with getTableSchema() method
+- Created ColumnInfo interface with name, type, nullable, and vectorDimension fields
+- Created TableSchema interface with name, columns, rowCount, and sizeBytes fields
+- Implemented parseField() method to extract column info from Arrow schema fields
+- Implemented mapArrowTypeToDisplayType() to convert Arrow types to display types
+- Added support for detecting fixed_size_list (vector) types with dimension extraction
+- Implemented estimateTableSize() to estimate table size based on row count and column types
+- Created TableV1Controller with GET /api/v1/tables/:name/schema endpoint
+- Endpoint returns column info including vector dimensions for fixed_size_list types
+- Proper error handling for table not found and connection errors
+- Registered TableV1Controller in controllers/index.ts
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/server/src/services/table.service.ts (new)
+- apps/server/src/controllers/v1/table.controller.ts (new)
+- apps/server/src/controllers/index.ts
+
+**Learnings for future iterations:**
+- LanceDB table.schema() is an async method that returns Promise<Schema>
+- Arrow schema fields have name, type (with toString()), and nullable properties
+- fixed_size_list types contain vector information: fixed_size_list<item_type, dimension>
+- Use regex to extract vector dimension from type string: /fixed_size_list<([^,]+),\s*(\d+)>/
+- Table size estimation is needed since LanceDB doesn't provide direct size API
+- Different Arrow types need different byte size estimates for size calculation
+---
