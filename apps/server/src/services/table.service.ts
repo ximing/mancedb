@@ -18,6 +18,21 @@ export interface TableSchema {
   createdAt?: number;
 }
 
+export interface TableDataQueryOptions {
+  page: number;
+  pageSize: number;
+  sortColumn?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface TableDataResult {
+  rows: Record<string, unknown>[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 @Service()
 export class TableService {
   constructor(private connectionService: ConnectionService) {}
@@ -259,6 +274,95 @@ export class TableService {
     }
 
     return rowCount * bytesPerRow;
+  }
+
+  /**
+   * Get table data with pagination and sorting
+   */
+  async getTableData(
+    connectionId: string,
+    tableName: string,
+    options: TableDataQueryOptions
+  ): Promise<TableDataResult | null> {
+    const db = await this.connectToDatabase(connectionId);
+    try {
+      // Check if table exists
+      const tableNames = await db.tableNames();
+      if (!tableNames.includes(tableName)) {
+        return null;
+      }
+
+      const table = await db.openTable(tableName);
+      try {
+        const totalCount = await table.countRows();
+
+        // Build the query
+        let query = table.query();
+
+        // Apply pagination
+        // LanceDB uses limit/offset for pagination
+        const offset = (options.page - 1) * options.pageSize;
+        query = query.limit(options.pageSize).offset(offset);
+
+        // Execute query
+        const results = await query.toArray();
+
+        // Process results - truncate vectors for display
+        const processedRows = results.map((row) => this.processRow(row));
+
+        const totalPages = Math.ceil(totalCount / options.pageSize);
+
+        return {
+          rows: processedRows,
+          totalCount,
+          page: options.page,
+          pageSize: options.pageSize,
+          totalPages,
+        };
+      } finally {
+        table.close();
+      }
+    } finally {
+      db.close();
+    }
+  }
+
+  /**
+   * Process a row to truncate vectors for display
+   */
+  private processRow(row: Record<string, unknown>): Record<string, unknown> {
+    const processed: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(row)) {
+      if (this.isVector(value)) {
+        // Truncate vector to show dimension summary
+        const vector = value as number[] | Float32Array | Float64Array;
+        processed[key] = `[${vector.length}-dim vector]`;
+      } else if (value instanceof Date) {
+        processed[key] = value.toISOString();
+      } else if (value instanceof Uint8Array || value instanceof Buffer) {
+        // Truncate binary data
+        processed[key] = `[${value.length} bytes]`;
+      } else {
+        processed[key] = value;
+      }
+    }
+
+    return processed;
+  }
+
+  /**
+   * Check if a value is a vector (array of numbers or typed array)
+   */
+  private isVector(value: unknown): boolean {
+    if (Array.isArray(value)) {
+      // Check if it's an array of numbers (vector)
+      return value.length > 0 && typeof value[0] === 'number' && value.length > 10;
+    }
+    if (value instanceof Float32Array || value instanceof Float64Array) {
+      return value.length > 10;
+    }
+    return false;
   }
 
   /**
