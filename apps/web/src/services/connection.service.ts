@@ -178,4 +178,20 @@ export class ConnectionService extends Service {
   clearError(): void {
     this.error = null;
   }
+
+  /**
+   * Get a connection by ID without setting loading state
+   * Useful for loading connection details without affecting UI loading state
+   */
+  async getConnectionById(id: string): Promise<ConnectionDto | null> {
+    try {
+      const response = await getConnectionApi(id);
+      if (response.code === 0) {
+        return response.data;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
 }

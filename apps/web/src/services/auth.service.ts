@@ -24,7 +24,7 @@ export class AuthService extends Service {
 
   async login(email: string, password: string): Promise<boolean> {
     const response = await loginApi({ email, password });
-    const responseData = response.data as Record<string, unknown>;
+    const responseData = response.data as unknown as Record<string, unknown>;
     if (response.code === 0 && responseData.token && typeof responseData.token === 'string') {
       this.token = responseData.token;
       this.isAuthenticated = true;
@@ -36,7 +36,7 @@ export class AuthService extends Service {
 
   async register(email: string, password: string, nickname?: string): Promise<boolean> {
     const response = await registerApi({ email, password, nickname });
-    const responseData = response.data as Record<string, unknown>;
+    const responseData = response.data as unknown as Record<string, unknown>;
     if (response.code === 0 && responseData.token && typeof responseData.token === 'string') {
       this.token = responseData.token;
       this.isAuthenticated = true;

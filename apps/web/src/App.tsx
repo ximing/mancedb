@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import AuthPage from './pages/auth';
 import { ConnectionListPage } from './pages/connections/connection-list';
 import { ConnectionFormPage } from './pages/connections/connection-form';
+import { ConnectionLoginPage } from './pages/connection-login/connection-login';
 import { ProtectedRoute } from './components/protected-route';
 
 function App() {
@@ -38,10 +39,7 @@ function App() {
           path="/connections/:id/login"
           element={
             <ProtectedRoute>
-              <div className="p-8">
-                <h1 className="text-2xl font-bold">Connection Login</h1>
-                <p className="mt-4 text-gray-600">Connection login page coming soon (US-007).</p>
-              </div>
+              <ConnectionLoginPage />
             </ProtectedRoute>
           }
         />
