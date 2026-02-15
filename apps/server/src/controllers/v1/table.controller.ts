@@ -2,7 +2,7 @@ import { JsonController, Get, Post, Put, Delete, Param, Req, QueryParam, Authori
 import { Service } from 'typedi';
 import type { Request } from 'express';
 import { TableService, type FilterCondition, type AddColumnOptions } from '../../services/table.service.js';
-import type { DeleteTableResult, RenameTableResult } from '../../services/table.service.js';
+import type { DeleteTableResult, RenameTableResult, DeleteRowsResult } from '../../services/table.service.js';
 import { ResponseUtil } from '../../utils/response.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import type { ConnectionAuthInfo } from '../../types/express.js';
@@ -58,6 +58,15 @@ interface RenameTableResponseDto {
 interface DeleteTableResponseDto {
   name: string;
   deleted: boolean;
+}
+
+interface DeleteRowsRequestDto {
+  filters?: FilterCondition[];
+  whereClause?: string;
+}
+
+interface DeleteRowsResponseDto {
+  deletedCount: number;
 }
 
 @Service()
@@ -431,6 +440,109 @@ export class TableV1Controller {
         }
       }
       return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to rename table');
+    }
+  }
+
+  /**
+   * DELETE /api/v1/tables/:name/rows
+   * Delete rows from a table based on filter conditions
+   */
+  @Delete('/:name/rows')
+  @Authorized()
+  async deleteRows(
+    @Param('name') tableName: string,
+    @Body() body: DeleteRowsRequestDto,
+    @Req() req: Request
+  ) {
+    try {
+      const user = req.user as ConnectionAuthInfo | undefined;
+      const connectionId = user?.connectionId;
+      if (!connectionId) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED, 'Connection authentication required');
+      }
+
+      // Validate that either filters or whereClause is provided
+      if ((!body.filters || body.filters.length === 0) && !body.whereClause) {
+        return ResponseUtil.error(
+          ErrorCode.PARAMS_ERROR,
+          'Delete condition is required. Provide either filters or whereClause.'
+        );
+      }
+
+      const result = await this.tableService.deleteRows(
+        connectionId,
+        tableName,
+        body.filters,
+        body.whereClause
+      );
+
+      const response: DeleteRowsResponseDto = {
+        deletedCount: result.deletedCount,
+      };
+
+      return ResponseUtil.success(response);
+    } catch (error) {
+      console.error('Delete rows error:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          return ResponseUtil.error(ErrorCode.NOT_FOUND, error.message);
+        }
+        if (error.message.includes('Delete condition is required')) {
+          return ResponseUtil.error(ErrorCode.PARAMS_ERROR, error.message);
+        }
+        if (error.message.includes('not configured') || error.message.includes('incomplete')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+        if (error.message.includes('credentials')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+      }
+      return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to delete rows');
+    }
+  }
+
+  /**
+   * DELETE /api/v1/tables/:name/rows/:id
+   * Delete a single row by ID
+   */
+  @Delete('/:name/rows/:id')
+  @Authorized()
+  async deleteRowById(
+    @Param('name') tableName: string,
+    @Param('id') rowId: string,
+    @Req() req: Request
+  ) {
+    try {
+      const user = req.user as ConnectionAuthInfo | undefined;
+      const connectionId = user?.connectionId;
+      if (!connectionId) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED, 'Connection authentication required');
+      }
+
+      // Try to parse as number, otherwise use as string
+      const id = /^\d+$/.test(rowId) ? parseInt(rowId, 10) : rowId;
+
+      const result = await this.tableService.deleteRowById(connectionId, tableName, id);
+
+      const response: DeleteRowsResponseDto = {
+        deletedCount: result.deletedCount,
+      };
+
+      return ResponseUtil.success(response);
+    } catch (error) {
+      console.error('Delete row by ID error:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          return ResponseUtil.error(ErrorCode.NOT_FOUND, error.message);
+        }
+        if (error.message.includes('not configured') || error.message.includes('incomplete')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+        if (error.message.includes('credentials')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+      }
+      return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to delete row');
     }
   }
 }

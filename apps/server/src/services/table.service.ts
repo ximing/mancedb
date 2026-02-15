@@ -65,6 +65,10 @@ export interface DeleteTableResult {
   deleted: boolean;
 }
 
+export interface DeleteRowsResult {
+  deletedCount: number;
+}
+
 @Service()
 export class TableService {
   constructor(private connectionService: ConnectionService) {}
@@ -698,6 +702,111 @@ export class TableService {
         };
       } finally {
         oldTable.close();
+      }
+    } finally {
+      db.close();
+    }
+  }
+
+  /**
+   * Delete rows from a table based on filter conditions
+   * LanceDB uses the delete() method with a WHERE clause
+   */
+  async deleteRows(
+    connectionId: string,
+    tableName: string,
+    filters?: FilterCondition[],
+    whereClause?: string
+  ): Promise<DeleteRowsResult> {
+    const db = await this.connectToDatabase(connectionId);
+    try {
+      // Check if table exists
+      const tableNames = await db.tableNames();
+      if (!tableNames.includes(tableName)) {
+        throw new Error(`Table '${tableName}' not found`);
+      }
+
+      const table = await db.openTable(tableName);
+      try {
+        // Build the WHERE clause for deletion
+        let deleteFilter: string | undefined;
+
+        if (whereClause) {
+          // Use provided raw WHERE clause
+          deleteFilter = whereClause;
+        } else if (filters && filters.length > 0) {
+          // Build filter string from conditions
+          deleteFilter = this.buildFilterString(filters);
+        }
+
+        if (!deleteFilter) {
+          throw new Error('Delete condition is required. Provide either filters or whereClause.');
+        }
+
+        // Get count before deletion for reporting
+        const countBefore = await table.countRows();
+
+        // Execute the delete operation
+        await table.delete(deleteFilter);
+
+        // Get count after deletion
+        const countAfter = await table.countRows();
+        const deletedCount = countBefore - countAfter;
+
+        return {
+          deletedCount,
+        };
+      } finally {
+        table.close();
+      }
+    } finally {
+      db.close();
+    }
+  }
+
+  /**
+   * Delete a single row by ID
+   * Assumes the table has an 'id' column
+   */
+  async deleteRowById(
+    connectionId: string,
+    tableName: string,
+    id: string | number
+  ): Promise<DeleteRowsResult> {
+    const db = await this.connectToDatabase(connectionId);
+    try {
+      // Check if table exists
+      const tableNames = await db.tableNames();
+      if (!tableNames.includes(tableName)) {
+        throw new Error(`Table '${tableName}' not found`);
+      }
+
+      const table = await db.openTable(tableName);
+      try {
+        // Build the WHERE clause for the ID
+        let idFilter: string;
+        if (typeof id === 'string') {
+          const escapedId = id.replace(/'/g, "\\'");
+          idFilter = `id = '${escapedId}'`;
+        } else {
+          idFilter = `id = ${id}`;
+        }
+
+        // Get count before deletion
+        const countBefore = await table.countRows();
+
+        // Execute the delete operation
+        await table.delete(idFilter);
+
+        // Get count after deletion
+        const countAfter = await table.countRows();
+        const deletedCount = countBefore - countAfter;
+
+        return {
+          deletedCount,
+        };
+      } finally {
+        table.close();
       }
     } finally {
       db.close();
