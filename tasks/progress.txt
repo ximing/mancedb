@@ -14,6 +14,10 @@
 - Export to CSV: Use convertToCsv() helper with proper escaping for values containing commas/quotes/newlines
 - Export to JSON: Use JSON.stringify() with timestamped filenames for downloads
 - Use downloadFile() helper with Blob and URL.createObjectURL for file downloads
+- LanceDB addColumns() uses SQL expressions to populate new column values
+- Use CAST(NULL AS <type>) for adding nullable columns with default NULL values
+- For vector columns, use arrow_cast(NULL, 'FixedSizeList<N, Float32>') syntax
+- LanceDB dropColumns() is a metadata-only operation; data is not physically removed until compact_files and cleanup_files are called
 
 ## 2026-02-15 - Initial Setup
 - Created branch `ralph/lancedb-admin`
@@ -544,4 +548,28 @@
 - Use Blob and URL.createObjectURL for client-side file downloads
 - Timestamped filenames prevent overwriting previous exports
 - Keep export buttons grouped with copy functionality for better UX
+
+## 2026-02-16 - US-018 Complete
+- Implemented addColumn() and dropColumn() methods in TableService
+- Added AddColumnOptions, AddColumnResult, DropColumnResult interfaces
+- Created POST /api/v1/tables/:name/columns endpoint for adding columns
+- Created DELETE /api/v1/tables/:name/columns/:column endpoint for deleting columns
+- Supported Arrow types: int64, float64, string, binary, vector
+- Vector columns require dimension parameter (1-10000)
+- Column names validated with regex: /^[a-zA-Z_][a-zA-Z0-9_]*$/
+- All new columns are nullable (LanceDB limitation)
+- Proper error handling for duplicate columns, missing tables, etc.
+- Both server and web builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/server/src/services/table.service.ts
+- apps/server/src/controllers/v1/table.controller.ts
+
+**Learnings for future iterations:**
+- LanceDB addColumns() uses SQL expressions to populate new column values
+- Use CAST(NULL AS <type>) for adding nullable columns with default NULL values
+- For vector columns, use arrow_cast(NULL, 'FixedSizeList<N, Float32>') syntax
+- LanceDB dropColumns() is a metadata-only operation; data is not physically removed until compact_files and cleanup_files are called
+- Column name validation should allow alphanumeric and underscore only, starting with letter or underscore
+- Vector dimension should be validated (positive number, reasonable max like 10000)
 ---

@@ -1,7 +1,7 @@
-import { JsonController, Get, Param, Req, QueryParam, Authorized, QueryParams } from 'routing-controllers';
+import { JsonController, Get, Post, Delete, Param, Req, QueryParam, Authorized, Body } from 'routing-controllers';
 import { Service } from 'typedi';
 import type { Request } from 'express';
-import { TableService, type FilterCondition } from '../../services/table.service.js';
+import { TableService, type FilterCondition, type AddColumnOptions } from '../../services/table.service.js';
 import { ResponseUtil } from '../../utils/response.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import type { ConnectionAuthInfo } from '../../types/express.js';
@@ -26,6 +26,23 @@ interface TableDataResponseDto {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+interface AddColumnRequestDto {
+  name: string;
+  type: 'int64' | 'float64' | 'string' | 'binary' | 'vector';
+  vectorDimension?: number;
+}
+
+interface AddColumnResponseDto {
+  name: string;
+  type: string;
+  version: number;
+}
+
+interface DropColumnResponseDto {
+  name: string;
+  version: number;
 }
 
 @Service()
@@ -166,6 +183,136 @@ export class TableV1Controller {
         }
       }
       return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to get table data');
+    }
+  }
+
+  /**
+   * POST /api/v1/tables/:name/columns
+   * Add a new column to the table
+   */
+  @Post('/:name/columns')
+  @Authorized()
+  async addColumn(
+    @Param('name') tableName: string,
+    @Body() body: AddColumnRequestDto,
+    @Req() req: Request
+  ) {
+    try {
+      const user = req.user as ConnectionAuthInfo | undefined;
+      const connectionId = user?.connectionId;
+      if (!connectionId) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED, 'Connection authentication required');
+      }
+
+      // Validate required fields
+      if (!body.name || !body.name.trim()) {
+        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Column name is required');
+      }
+
+      if (!body.type) {
+        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Column type is required');
+      }
+
+      // Validate column name format (alphanumeric and underscore only)
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(body.name)) {
+        return ResponseUtil.error(
+          ErrorCode.PARAMS_ERROR,
+          'Column name must start with letter or underscore and contain only letters, numbers, and underscores'
+        );
+      }
+
+      // Validate vector dimension for vector type
+      if (body.type === 'vector') {
+        if (!body.vectorDimension || body.vectorDimension <= 0 || body.vectorDimension > 10000) {
+          return ResponseUtil.error(
+            ErrorCode.PARAMS_ERROR,
+            'Vector dimension is required and must be between 1 and 10000'
+          );
+        }
+      }
+
+      const options: AddColumnOptions = {
+        name: body.name.trim(),
+        type: body.type,
+        vectorDimension: body.vectorDimension,
+        nullable: true, // LanceDB only supports adding nullable columns
+      };
+
+      const result = await this.tableService.addColumn(connectionId, tableName, options);
+
+      const response: AddColumnResponseDto = {
+        name: body.name.trim(),
+        type: body.type,
+        version: result.version,
+      };
+
+      return ResponseUtil.success(response);
+    } catch (error) {
+      console.error('Add column error:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          return ResponseUtil.error(ErrorCode.NOT_FOUND, error.message);
+        }
+        if (error.message.includes('already exists')) {
+          return ResponseUtil.error(ErrorCode.PARAMS_ERROR, error.message);
+        }
+        if (error.message.includes('Vector dimension')) {
+          return ResponseUtil.error(ErrorCode.PARAMS_ERROR, error.message);
+        }
+        if (error.message.includes('not configured') || error.message.includes('incomplete')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+        if (error.message.includes('credentials')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+      }
+      return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to add column');
+    }
+  }
+
+  /**
+   * DELETE /api/v1/tables/:name/columns/:column
+   * Delete a column from the table
+   */
+  @Delete('/:name/columns/:column')
+  @Authorized()
+  async dropColumn(
+    @Param('name') tableName: string,
+    @Param('column') columnName: string,
+    @Req() req: Request
+  ) {
+    try {
+      const user = req.user as ConnectionAuthInfo | undefined;
+      const connectionId = user?.connectionId;
+      if (!connectionId) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED, 'Connection authentication required');
+      }
+
+      const result = await this.tableService.dropColumn(connectionId, tableName, columnName);
+
+      const response: DropColumnResponseDto = {
+        name: columnName,
+        version: result.version,
+      };
+
+      return ResponseUtil.success(response);
+    } catch (error) {
+      console.error('Drop column error:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          return ResponseUtil.error(ErrorCode.NOT_FOUND, error.message);
+        }
+        if (error.message.includes('does not exist')) {
+          return ResponseUtil.error(ErrorCode.PARAMS_ERROR, error.message);
+        }
+        if (error.message.includes('not configured') || error.message.includes('incomplete')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+        if (error.message.includes('credentials')) {
+          return ResponseUtil.error(ErrorCode.DB_CONNECT_ERROR, error.message);
+        }
+      }
+      return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to drop column');
     }
   }
 }

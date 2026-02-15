@@ -40,6 +40,21 @@ export interface TableDataResult {
   totalPages: number;
 }
 
+export interface AddColumnOptions {
+  name: string;
+  type: 'int64' | 'float64' | 'string' | 'binary' | 'vector';
+  vectorDimension?: number;
+  nullable?: boolean;
+}
+
+export interface AddColumnResult {
+  version: number;
+}
+
+export interface DropColumnResult {
+  version: number;
+}
+
 @Service()
 export class TableService {
   constructor(private connectionService: ConnectionService) {}
@@ -480,5 +495,119 @@ export class TableService {
     // The value is already decrypted by the connection service when needed
     // This is a placeholder for any additional decryption logic
     return value;
+  }
+
+  /**
+   * Add a new column to the table
+   * LanceDB only supports adding nullable columns
+   */
+  async addColumn(
+    connectionId: string,
+    tableName: string,
+    options: AddColumnOptions
+  ): Promise<AddColumnResult> {
+    const db = await this.connectToDatabase(connectionId);
+    try {
+      // Check if table exists
+      const tableNames = await db.tableNames();
+      if (!tableNames.includes(tableName)) {
+        throw new Error(`Table '${tableName}' not found`);
+      }
+
+      const table = await db.openTable(tableName);
+      try {
+        // Check if column already exists
+        const schema = await table.schema();
+        const existingColumn = schema.fields.find((f) => f.name === options.name);
+        if (existingColumn) {
+          throw new Error(`Column '${options.name}' already exists`);
+        }
+
+        // Build the SQL expression for the default value based on type
+        const defaultValueSql = this.buildDefaultValueSql(options);
+
+        // Add the column using LanceDB's addColumns method
+        const result = await table.addColumns([
+          {
+            name: options.name,
+            valueSql: defaultValueSql,
+          },
+        ]);
+
+        return {
+          version: result.version,
+        };
+      } finally {
+        table.close();
+      }
+    } finally {
+      db.close();
+    }
+  }
+
+  /**
+   * Build SQL expression for default value based on column type
+   */
+  private buildDefaultValueSql(options: AddColumnOptions): string {
+    const { type, vectorDimension } = options;
+
+    switch (type) {
+      case 'int64':
+        return 'CAST(NULL AS BIGINT)';
+      case 'float64':
+        return 'CAST(NULL AS DOUBLE)';
+      case 'string':
+        return 'CAST(NULL AS VARCHAR)';
+      case 'binary':
+        return 'CAST(NULL AS VARBINARY)';
+      case 'vector':
+        if (!vectorDimension || vectorDimension <= 0) {
+          throw new Error('Vector dimension is required and must be positive');
+        }
+        // For vector types, we create a fixed-size list of floats filled with NULL
+        // LanceDB uses arrow_cast for complex types
+        return `arrow_cast(NULL, 'FixedSizeList<${vectorDimension}, Float32>')`;
+      default:
+        return 'CAST(NULL AS VARCHAR)';
+    }
+  }
+
+  /**
+   * Drop a column from the table
+   */
+  async dropColumn(
+    connectionId: string,
+    tableName: string,
+    columnName: string
+  ): Promise<DropColumnResult> {
+    const db = await this.connectToDatabase(connectionId);
+    try {
+      // Check if table exists
+      const tableNames = await db.tableNames();
+      if (!tableNames.includes(tableName)) {
+        throw new Error(`Table '${tableName}' not found`);
+      }
+
+      const table = await db.openTable(tableName);
+      try {
+        // Check if column exists
+        const schema = await table.schema();
+        const existingColumn = schema.fields.find((f) => f.name === columnName);
+        if (!existingColumn) {
+          throw new Error(`Column '${columnName}' does not exist`);
+        }
+
+        // Drop the column using LanceDB's dropColumns method
+        const result = await table.dropColumns([columnName]);
+
+        return {
+          version: result.version,
+        };
+      } finally {
+        table.close();
+      }
+    } finally {
+      db.close();
+    }
   }
 }
