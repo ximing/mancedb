@@ -361,3 +361,26 @@
 - DatabaseContent acts as a router within the database view - shows browser when no table selected, schema when table selected
 - formatBytes() helper converts bytes to human-readable format (B, KB, MB, GB, TB)
 ---
+
+## 2026-02-16 - US-012 Complete
+- Implemented table data browse backend API with pagination support
+- Added TableDataQueryOptions and TableDataResult interfaces to TableService
+- Implemented getTableData() method using LanceDB's limit/offset for pagination
+- Added vector truncation for display (shows [N-dim vector] instead of full data)
+- Added binary data truncation for display ([N bytes])
+- Created GET /api/v1/tables/:name/data endpoint with query params (page, pageSize, sortColumn, sortOrder)
+- Returns paginated results with totalCount, totalPages, page, pageSize
+- All builds pass (typecheck and lint)
+
+**Files changed:**
+- apps/server/src/services/table.service.ts
+- apps/server/src/controllers/v1/table.controller.ts
+
+**Learnings for future iterations:**
+- LanceDB Query API has limited sorting support - sorting params are reserved for future implementation
+- LanceDB supports offset() and limit() for pagination
+- Vector columns are detected by checking if value is array/typed array with length > 10
+- Binary data (Uint8Array/Buffer) should be truncated for display
+- Date objects are converted to ISO strings for JSON serialization
+- Maximum page size is capped at 1000 to prevent memory issues
+---

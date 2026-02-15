@@ -1,6 +1,7 @@
 import { Service } from '@rabjs/react';
 import { getTables, getDatabaseInfo } from '../api/database';
 import { getTableSchema } from '../api/table';
+import { getTableData, type TableDataResult } from '../api/table-data';
 
 export interface TableInfo {
   name: string;
@@ -30,6 +31,11 @@ export interface TableSchema {
   sizeBytes: number;
 }
 
+export interface TableDataState extends TableDataResult {
+  isLoading: boolean;
+  error: string | null;
+}
+
 export class DatabaseService extends Service {
   tables: TableInfo[] = [];
   databaseInfo: DatabaseInfo | null = null;
@@ -43,6 +49,21 @@ export class DatabaseService extends Service {
   isLoadingSchema = false;
   schemaError: string | null = null;
   activeTab: 'schema' | 'data' = 'schema';
+
+  // Table data state
+  tableData: TableDataState = {
+    rows: [],
+    totalCount: 0,
+    page: 1,
+    pageSize: 50,
+    totalPages: 0,
+    isLoading: false,
+    error: null,
+  };
+
+  // Sorting state
+  sortColumn: string | null = null;
+  sortOrder: 'asc' | 'desc' = 'asc';
 
   /**
    * Load all tables from the database
@@ -161,6 +182,10 @@ export class DatabaseService extends Service {
    */
   setActiveTab(tab: 'schema' | 'data'): void {
     this.activeTab = tab;
+    // Load data when switching to data tab if not already loaded
+    if (tab === 'data' && this.selectedTable && this.tableData.rows.length === 0) {
+      this.loadTableData();
+    }
   }
 
   /**
@@ -172,6 +197,93 @@ export class DatabaseService extends Service {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Load table data with pagination
+   */
+  async loadTableData(page?: number, pageSize?: number): Promise<void> {
+    if (!this.selectedTable) return;
+
+    const targetPage = page ?? this.tableData.page;
+    const targetPageSize = pageSize ?? this.tableData.pageSize;
+
+    this.tableData.isLoading = true;
+    this.tableData.error = null;
+
+    try {
+      const response = await getTableData(this.selectedTable, {
+        page: targetPage,
+        pageSize: targetPageSize,
+        sortColumn: this.sortColumn ?? undefined,
+        sortOrder: this.sortOrder,
+      });
+
+      if (response.code === 0) {
+        this.tableData.rows = response.data.rows;
+        this.tableData.totalCount = response.data.totalCount;
+        this.tableData.page = response.data.page;
+        this.tableData.pageSize = response.data.pageSize;
+        this.tableData.totalPages = response.data.totalPages;
+      } else {
+        this.tableData.error = 'Failed to load table data';
+      }
+    } catch (err) {
+      this.tableData.error = err instanceof Error ? err.message : 'Failed to load table data';
+    } finally {
+      this.tableData.isLoading = false;
+    }
+  }
+
+  /**
+   * Change page
+   */
+  async changePage(page: number): Promise<void> {
+    if (page < 1 || page > this.tableData.totalPages) return;
+    await this.loadTableData(page);
+  }
+
+  /**
+   * Change page size
+   */
+  async changePageSize(pageSize: number): Promise<void> {
+    await this.loadTableData(1, pageSize);
+  }
+
+  /**
+   * Set sorting
+   */
+  async setSorting(column: string | null, order: 'asc' | 'desc'): Promise<void> {
+    this.sortColumn = column;
+    this.sortOrder = order;
+    await this.loadTableData(1);
+  }
+
+  /**
+   * Toggle sort for a column
+   */
+  async toggleSort(column: string): Promise<void> {
+    if (this.sortColumn === column) {
+      // Toggle order
+      await this.setSorting(column, this.sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to asc
+      await this.setSorting(column, 'asc');
+    }
+  }
+
+  /**
+   * Refresh table data
+   */
+  async refreshTableData(): Promise<void> {
+    await this.loadTableData();
+  }
+
+  /**
+   * Clear table data error
+   */
+  clearTableDataError(): void {
+    this.tableData.error = null;
   }
 }
 
