@@ -1,18 +1,16 @@
 import type { TableInfo, DatabaseInfo } from '../services/database.service';
-import request from '../utils/request';
+import { apiClient } from '../utils/api-client';
 
 /**
  * Get all tables in the database
  */
 export const getTables = () => {
-  return request.get<never, { code: number; data: { tables: TableInfo[]; totalCount: number } }>(
-    '/api/v1/database/tables'
-  );
+  return apiClient.get<{ tables: TableInfo[]; totalCount: number }>('/api/v1/database/tables');
 };
 
 /**
  * Get database information
  */
 export const getDatabaseInfo = () => {
-  return request.get<never, { code: number; data: DatabaseInfo }>('/api/v1/database/info');
+  return apiClient.get<DatabaseInfo>('/api/v1/database/info');
 };

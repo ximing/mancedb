@@ -1,6 +1,13 @@
 // Renderer process entry point
-// This will be replaced with the actual web app in US-002
-import '../types/electron';
+// The web app is loaded from the built files in dist/web
+import type { ElectronAPI } from '../types/electron';
+
+// Extend Window interface for the renderer
+declare global {
+  interface Window {
+    electronAPI: ElectronAPI;
+  }
+}
 
 console.log('Electron renderer process started');
 console.log('Platform:', window.electronAPI?.platform);

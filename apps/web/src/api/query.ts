@@ -1,4 +1,4 @@
-import request from '../utils/request';
+import { apiClient } from '../utils/api-client';
 
 export interface ExecuteQueryRequest {
   sql: string;
@@ -29,7 +29,7 @@ export interface QueryHistoryResponse {
  * POST /api/v1/query
  */
 export const executeQuery = (params: ExecuteQueryRequest) => {
-  return request.post<never, { code: number; data: ExecuteQueryResult }>('/api/v1/query', params);
+  return apiClient.post<ExecuteQueryResult>('/api/v1/query', params);
 };
 
 /**
@@ -37,7 +37,5 @@ export const executeQuery = (params: ExecuteQueryRequest) => {
  * GET /api/v1/query/history
  */
 export const getQueryHistory = (limit: number = 20) => {
-  return request.get<never, { code: number; data: QueryHistoryResponse }>(
-    `/api/v1/query/history?limit=${limit}`
-  );
+  return apiClient.get<QueryHistoryResponse>('/api/v1/query/history', { limit });
 };

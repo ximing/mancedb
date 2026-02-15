@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   // Determine output directory based on build target
   const isElectron = process.env.ELECTRON === 'true';
   const outDir = isElectron

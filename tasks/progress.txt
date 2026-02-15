@@ -15,8 +15,8 @@
 ## User Stories
 
 [x] US-001: 创建 Electron 基础项目结构
-[ ] US-002: 集成 Web 应用到 Electron
-[ ] US-003: 实现 Web 项目 Electron 适配改造
+[x] US-002: 集成 Web 应用到 Electron
+[x] US-003: 实现 Web 项目 Electron 适配改造
 [ ] US-004: 实现本地文件系统访问
 [ ] US-005: 实现原生 LanceDB 连接模式
 [ ] US-006: 实现连接模式切换 UI
@@ -37,6 +37,43 @@
 - contextBridge 是安全的 IPC 通信方式，需要在 preload 中定义类型并在 renderer 中引入
 - Electron 的 types 需要单独配置，不能和 DOM types 混用（main 进程）
 - 项目使用 pnpm workspace，新包需要运行 pnpm install 安装依赖
+---
+
+## 2026-02-16 08:30 - US-002
+- 更新 web app vite.config.ts：支持 ELECTRON=true 环境变量，构建输出到 apps/client/dist/web
+- 更新 Electron main 进程：开发模式加载 web dev server (localhost:5173)，生产模式加载构建产物
+- 更新 client vite.config.ts：配置 VITE_DEV_SERVER_URL 传递给 main 进程
+- 添加环境检测工具：apps/web/src/utils/environment.ts (isElectron, isBrowser, getPlatform 等)
+- 路由适配：App.tsx 根据环境自动选择 HashRouter (Electron) 或 BrowserRouter (浏览器)
+- 添加类型定义：apps/web/src/types/electron.d.ts 声明 window.electronAPI
+- 添加构建脚本：client package.json 添加 build:web 和 build:electron 脚本
+- 根 package.json 添加 dev:client 和 build:client 脚本
+- 类型检查通过，lint 通过
+
+**Learnings for future iterations:**
+- Electron 使用 file:// 协议加载本地文件时，需要使用 HashRouter 替代 BrowserRouter（History API 不支持 file 协议）
+- vite-plugin-electron 通过 process.env.VITE_DEV_SERVER_URL 向 main 进程传递 dev server URL
+- 使用 ELECTRON=true 环境变量控制 web app 的构建输出路径
+- 环境检测通过多种方式：process.versions.electron, window.electronAPI, navigator.userAgent
+- 开发流程：先启动 web dev server (localhost:5173)，然后启动 Electron 加载该 URL
+---
+
+## 2026-02-16 16:00 - US-003
+- 创建统一 API 客户端：apps/web/src/utils/api-client.ts，支持 HTTP 和 IPC 两种模式
+- 创建 IPC 请求工具：apps/web/src/utils/ipc-request.ts，用于 Electron 本地模式
+- 更新 Electron preload 脚本：添加 invoke 方法支持 request-response 模式
+- 更新 Electron 类型定义：添加 invoke 方法到 ElectronAPI 接口
+- 迁移所有 API 文件：auth.ts, user.ts, connection.ts, connection-auth.ts, database.ts, table.ts, table-schema.ts, table-data.ts, query.ts
+- 修复 environment.ts 类型问题：添加 Process 类型声明避免 TypeScript 错误
+- 修复 tsconfig.renderer.json：调整 rootDir 以包含 types 目录
+- 类型检查通过，lint 通过
+
+**Learnings for future iterations:**
+- 统一 API 客户端设计：api-client.ts 自动检测环境并选择 HTTP 或 IPC 模式
+- IPC 通信使用 invoke 模式：比 send/receive 更适合 request-response 场景
+- TypeScript 类型兼容：使用 `object | Record<string, unknown>` 来接受更灵活的参数类型
+- Electron 的 process 对象在 renderer 进程中需要类型声明
+- 所有 API 函数现在通过 apiClient.{get,post,put,delete,patch} 调用，保持与原有 axios API 相同的返回格式 {code, data, message}
 ---
 
 ## Notes

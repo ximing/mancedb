@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ElectronAPI } from '../types/electron';
 
+// Valid channels for send/receive
+const VALID_SEND_CHANNELS = ['app:quit', 'window:minimize', 'window:maximize'];
+const VALID_RECEIVE_CHANNELS = ['app:update-available'];
+const VALID_INVOKE_CHANNELS = ['dialog:openDirectory', 'api:request'];
+
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 const electronAPI: ElectronAPI = {
@@ -9,17 +14,23 @@ const electronAPI: ElectronAPI = {
 
   // IPC communication
   send: (channel: string, ...args: unknown[]) => {
-    const validChannels = ['app:quit', 'window:minimize', 'window:maximize'];
-    if (validChannels.includes(channel)) {
+    if (VALID_SEND_CHANNELS.includes(channel)) {
       ipcRenderer.send(channel, ...args);
     }
   },
 
   receive: (channel: string, callback: (...args: unknown[]) => void) => {
-    const validChannels = ['app:update-available'];
-    if (validChannels.includes(channel)) {
+    if (VALID_RECEIVE_CHANNELS.includes(channel)) {
       ipcRenderer.on(channel, (_event, ...args) => callback(...args));
     }
+  },
+
+  // Invoke pattern for request-response operations
+  invoke: (channel: string, ...args: unknown[]) => {
+    if (VALID_INVOKE_CHANNELS.includes(channel)) {
+      return ipcRenderer.invoke(channel, ...args);
+    }
+    return Promise.reject(new Error(`Invalid invoke channel: ${channel}`));
   },
 
   // File system operations (to be implemented in US-004)

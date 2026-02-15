@@ -1,4 +1,4 @@
-import request from '../utils/request';
+import { apiClient } from '../utils/api-client';
 
 export type ColumnType = 'int64' | 'float64' | 'string' | 'binary' | 'vector';
 
@@ -23,17 +23,14 @@ export interface DropColumnResponse {
  * Add a new column to the table
  */
 export const addColumn = (tableName: string, data: AddColumnRequest) => {
-  return request.post<never, { code: number; data: AddColumnResponse; message?: string }>(
-    `/api/v1/tables/${encodeURIComponent(tableName)}/columns`,
-    data
-  );
+  return apiClient.post<AddColumnResponse>(`/api/v1/tables/${encodeURIComponent(tableName)}/columns`, data);
 };
 
 /**
  * Delete a column from the table
  */
 export const dropColumn = (tableName: string, columnName: string) => {
-  return request.delete<never, { code: number; data: DropColumnResponse; message?: string }>(
+  return apiClient.delete<DropColumnResponse>(
     `/api/v1/tables/${encodeURIComponent(tableName)}/columns/${encodeURIComponent(columnName)}`
   );
 };

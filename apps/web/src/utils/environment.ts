@@ -3,13 +3,26 @@
  * Helps determine if the app is running in Electron or browser
  */
 
+// Type declarations for Electron's process object
+declare global {
+  interface Process {
+    versions?: {
+      electron?: string;
+    };
+    type?: 'browser' | 'renderer';
+    platform: string;
+  }
+}
+
+declare const process: Process | undefined;
+
 /**
  * Check if running in Electron environment
  * Detects both main and renderer processes
  */
 export function isElectron(): boolean {
   // Check for Electron's process.versions.electron
-  if (typeof process !== 'undefined' && process.versions && process.versions.electron) {
+  if (typeof process !== 'undefined' && process?.versions?.electron) {
     return true;
   }
 
@@ -31,9 +44,8 @@ export function isElectron(): boolean {
  */
 export function isElectronMain(): boolean {
   return typeof process !== 'undefined' &&
-    process.versions != null &&
-    process.versions.electron != null &&
-    process.type === 'browser';
+    process?.versions?.electron != null &&
+    process?.type === 'browser';
 }
 
 /**
@@ -41,9 +53,8 @@ export function isElectronMain(): boolean {
  */
 export function isElectronRenderer(): boolean {
   return typeof process !== 'undefined' &&
-    process.versions != null &&
-    process.versions.electron != null &&
-    process.type === 'renderer';
+    process?.versions?.electron != null &&
+    process?.type === 'renderer';
 }
 
 /**
@@ -72,7 +83,7 @@ export function isProduction(): boolean {
  * Returns 'win32', 'darwin', 'linux', or 'browser'
  */
 export function getPlatform(): string {
-  if (isElectron() && typeof process !== 'undefined') {
+  if (isElectron() && typeof process !== 'undefined' && process?.platform) {
     return process.platform;
   }
 
