@@ -381,7 +381,7 @@ export class ConnectionService {
   /**
    * Update the last connected timestamp
    */
-  private async updateLastConnectedAt(id: string): Promise<void> {
+  async updateLastConnectedAt(id: string): Promise<void> {
     try {
       const table = await this.lanceDb.openTable('connections');
       await table.update(

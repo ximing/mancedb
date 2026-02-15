@@ -20,3 +20,24 @@ export interface LoginResponseDto {
   token: string;
   user: UserInfoDto;
 }
+
+// Connection-based authentication DTOs
+export interface ConnectionLoginDto {
+  connectionId: string;
+  username: string;
+  password: string;
+}
+
+export interface ConnectionLoginResponseDto {
+  token: string;
+  connection: {
+    id: string;
+    name: string;
+    type: 'local' | 's3';
+  };
+  expiresAt: number;
+}
+
+export interface RefreshTokenDto {
+  token: string;
+}
