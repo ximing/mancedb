@@ -1,3 +1,11 @@
+## Codebase Patterns
+- Electron 项目使用 vite-plugin-electron 实现热重载开发
+- TypeScript 配置使用 project references 分别配置 main/preload/renderer 进程
+- 类型定义放在 src/types/ 目录，通过 import 在需要的地方引入
+- IPC 通信使用 contextBridge 暴露 API，避免直接暴露 ipcRenderer
+
+---
+
 # Ralph Progress Log
 # Project: Electron Desktop Client for LanceDB Admin
 # Branch: feat/electron-client
@@ -6,7 +14,7 @@
 
 ## User Stories
 
-[ ] US-001: 创建 Electron 基础项目结构
+[x] US-001: 创建 Electron 基础项目结构
 [ ] US-002: 集成 Web 应用到 Electron
 [ ] US-003: 实现 Web 项目 Electron 适配改造
 [ ] US-004: 实现本地文件系统访问
@@ -15,6 +23,21 @@
 [ ] US-007: 添加系统集成特性
 [ ] US-008: 实现自动更新检查
 [ ] US-009: 配置跨平台打包
+
+## 2026-02-16 07:45 - US-001
+- 创建 apps/client 目录，包含完整的 Electron 项目结构
+- 配置 TypeScript：使用 project references 分别配置 main/preload/renderer
+- 配置 Vite：使用 vite-plugin-electron 实现热重载
+- 配置 ESLint：继承项目现有配置风格
+- 添加开发脚本：pnpm dev 支持 hot reload
+- 类型检查通过，lint 通过
+
+**Learnings for future iterations:**
+- vite-plugin-electron 自动处理 main/preload 进程的构建和热重载
+- contextBridge 是安全的 IPC 通信方式，需要在 preload 中定义类型并在 renderer 中引入
+- Electron 的 types 需要单独配置，不能和 DOM types 混用（main 进程）
+- 项目使用 pnpm workspace，新包需要运行 pnpm install 安装依赖
+---
 
 ## Notes
 
