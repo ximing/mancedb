@@ -1,11 +1,40 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import path from 'node:path';
 import { registerIPCHandlers } from './ipc-router';
+import { createApplicationMenu } from './menu';
+import { loadWindowState, saveWindowState } from './utils/window-state';
+
+// Keep a global reference of the window object to prevent garbage collection
+let mainWindow: BrowserWindow | null = null;
+
+// Single instance lock
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  // Another instance is already running, quit this one
+  app.quit();
+} else {
+  // This is the first instance
+  app.on('second-instance', () => {
+    // Someone tried to run a second instance, focus our window instead
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      mainWindow.focus();
+    }
+  });
+}
 
 const createWindow = () => {
-  const mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+  // Load saved window state
+  const windowState = loadWindowState();
+
+  mainWindow = new BrowserWindow({
+    width: windowState.width,
+    height: windowState.height,
+    x: windowState.x,
+    y: windowState.y,
     minWidth: 1024,
     minHeight: 768,
     webPreferences: {
@@ -20,9 +49,44 @@ const createWindow = () => {
     show: false, // Show when ready to prevent flash
   });
 
+  // Restore maximized/fullscreen state
+  if (windowState.isMaximized) {
+    mainWindow.maximize();
+  }
+  if (windowState.isFullScreen) {
+    mainWindow.setFullScreen(true);
+  }
+
   // Show window when content is ready
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+    mainWindow?.show();
+  });
+
+  // Save window state on close
+  const saveState = () => {
+    if (!mainWindow) return;
+
+    const bounds = mainWindow.getBounds();
+    saveWindowState({
+      width: bounds.width,
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y,
+      isMaximized: mainWindow.isMaximized(),
+      isFullScreen: mainWindow.isFullScreen(),
+    });
+  };
+
+  mainWindow.on('resize', saveState);
+  mainWindow.on('move', saveState);
+  mainWindow.on('maximize', saveState);
+  mainWindow.on('unmaximize', saveState);
+  mainWindow.on('enter-full-screen', saveState);
+  mainWindow.on('leave-full-screen', saveState);
+
+  // Clean up when window is closed
+  mainWindow.on('closed', () => {
+    mainWindow = null;
   });
 
   // Load the web app
@@ -42,6 +106,9 @@ app.whenReady().then(() => {
   // Register IPC handlers for LanceDB API
   registerIPCHandlers();
 
+  // Create application menu
+  createApplicationMenu();
+
   createWindow();
 
   app.on('activate', () => {
@@ -59,10 +126,10 @@ app.on('window-all-closed', () => {
 
 // IPC handler for opening directory dialog
 ipcMain.handle('dialog:openDirectory', async () => {
-  const mainWindow = BrowserWindow.getAllWindows()[0];
-  if (!mainWindow) return null;
+  const window = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+  if (!window) return null;
 
-  const result = await dialog.showOpenDialog(mainWindow, {
+  const result = await dialog.showOpenDialog(window, {
     properties: ['openDirectory'],
     title: 'Select LanceDB Database Folder',
     buttonLabel: 'Select Folder',
