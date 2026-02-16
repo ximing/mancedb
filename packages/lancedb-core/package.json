@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.26.2",
+    "@mancedb/dto": "workspace:*",
     "typedi": "^0.10.0",
     "reflect-metadata": "^0.1.13",
     "tslib": "2.8.1"
