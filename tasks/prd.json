@@ -96,8 +96,8 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Removed token logic from api-client.ts and request.ts, cleaned up AuthService, typecheck passes"
     },
     {
       "id": "US-007",
@@ -111,8 +111,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated ipc-router.ts auth endpoints to return error (authentication disabled), startup flow already goes directly to connections page"
     },
     {
       "id": "US-008",

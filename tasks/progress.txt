@@ -18,6 +18,50 @@
 - DTO Removal Pattern: When removing DTO exports, check all consumers to ensure they don't break; replace with inline types if needed
 - Auth Removal Pattern: When removing auth, simplify ProtectedRoute to just render children and make AuthService always return authenticated state
 - Auth Page Removal Pattern: When removing auth pages, also delete the entire directory including components subdirectory and index.tsx entry point
+- Token Removal Pattern: Check both api-client.ts (fetch-based) and request.ts (axios-based) for token injection logic
+- Electron Auth Removal Pattern: IPC router auth endpoints should return error (403) when authentication is disabled, keeping only logout as no-op for compatibility
+
+---
+
+## 2026-02-17 - US-007
+- Updated ipc-router.ts auth endpoints:
+  - /api/v1/auth/login now returns errorResponse('Authentication is disabled', 403)
+  - /api/v1/auth/me now returns errorResponse('Authentication is disabled', 403)
+  - /api/v1/auth/logout kept as successResponse (no-op for compatibility)
+  - /api/v1/users/profile now returns errorResponse('Authentication is disabled', 403)
+- Electron startup flow already works correctly:
+  - main/index.ts loads the web app directly
+  - startup-mode.tsx navigates directly to /connections without authentication
+  - No separate login window exists in the current implementation
+- Typecheck passes for client package
+- Lint passes with only pre-existing warnings
+
+**Learnings for future iterations:**
+- Electron client didn't have a separate login window - it uses the web app's startup-mode.tsx
+- The IPC router's auth endpoints should return 403 errors when auth is disabled (not mock success responses)
+- Keep logout endpoint as no-op for compatibility with any cleanup code that might call it
+- Connection-auth endpoints (/api/v1/connection-auth/verify) are separate from user auth and should be kept
+
+---
+
+## 2026-02-17 - US-006
+- Removed token injection from api-client.ts:
+  - Removed localStorage.getItem('mancedb_token') and Authorization header
+  - Removed 401 error handling and redirect to /auth
+- Removed token logic from request.ts (axios client):
+  - Removed request interceptor token injection
+  - Removed 401 response handler that cleared tokens and redirected
+- Cleaned up AuthService constructor:
+  - Removed localStorage.removeItem('token') cleanup code
+- ConnectionAuthService is kept for connection-level auth (separate from user auth)
+- Typecheck passes for web package
+- Lint passes with only pre-existing warnings
+
+**Learnings for future iterations:**
+- Two API clients exist: api-client.ts (fetch-based, unified) and request.ts (axios-based, HTTP only)
+- Both needed token removal for complete cleanup
+- Connection-level auth (ConnectionAuthService) uses different storage key ('mancedb_connection_auth')
+- 401 handling is no longer needed since authentication is completely removed
 
 ---
 

@@ -179,39 +179,22 @@ async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any
       return successResponse({ success: true, message: 'Local database connected' });
     }
 
-    // Auth endpoints (local mode doesn't require auth)
+    // Auth endpoints - authentication removed, return error
     if (endpoint === '/api/v1/auth/login' && method === 'POST') {
-      // Return a mock successful login for local mode
-      return successResponse({
-        token: 'local-mode-token',
-        user: {
-          id: 'local-user',
-          username: 'local',
-          email: 'local@localhost',
-        },
-      });
+      return errorResponse('Authentication is disabled', 403);
     }
 
     if (endpoint === '/api/v1/auth/me' && method === 'GET') {
-      return successResponse({
-        id: 'local-user',
-        username: 'local',
-        email: 'local@localhost',
-      });
+      return errorResponse('Authentication is disabled', 403);
     }
 
     if (endpoint === '/api/v1/auth/logout' && method === 'POST') {
       return successResponse({ success: true });
     }
 
-    // User endpoints
+    // User endpoints - authentication removed, return error
     if (endpoint === '/api/v1/users/profile' && method === 'GET') {
-      return successResponse({
-        id: 'local-user',
-        username: 'local',
-        email: 'local@localhost',
-        createdAt: new Date().toISOString(),
-      });
+      return errorResponse('Authentication is disabled', 403);
     }
 
     // Connection-auth endpoints
