@@ -13,6 +13,7 @@
 - Error Response Format: Server uses {code, msg, data}, Client uses {code, message, data} - both are handled by UI
 - Query History: Server persists to LanceDB table, Client returns empty array (local mode doesn't persist)
 - Column Operations: Server supports addColumn/dropColumn via LanceDB's addColumns/dropColumns API, Client throws "not supported" error
+- JWT Removal Pattern: When removing JWT auth, provide fallback secrets for type compatibility in deprecated services
 
 ---
 
@@ -631,3 +632,21 @@
 
 ## Notes
 
+
+## 2026-02-17 - US-001
+- Removed authHandler middleware from apps/server/src/app.ts
+- Removed CurrentUser decorator from apps/server/src/controllers/v1/user.controller.ts
+- Removed currentUserChecker from routing-controllers configuration in app.ts
+- Made JWT_SECRET optional in apps/server/src/config/config.ts (config.jwt.secret?: string)
+- Simplified auth-handler.ts to pass through all requests (deprecated but kept for compatibility)
+- Added fallback JWT secrets in auth.controller.ts, connection-auth.service.ts, and connection.service.ts for type compatibility
+- Typecheck passes for server package
+- Lint has pre-existing eslint-plugin-turbo issue (not related to changes)
+
+**Learnings for future iterations:**
+- When making JWT secret optional, provide a fallback value in services that still use JWT for type compatibility
+- The auth-handler middleware can be simplified to just call next() when removing authentication
+- User controller can return mock anonymous user data when auth is removed
+- Mark deprecated code with @deprecated JSDoc comments for clarity
+- Files changed: app.ts, config.ts, auth.controller.ts, user.controller.ts, auth-handler.ts, connection-auth.service.ts, connection.service.ts
+---

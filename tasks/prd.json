@@ -1,275 +1,132 @@
 {
-  "project": "mancedb",
-  "branchName": "ralph/lancedb-refactor",
-  "description": "LanceDB 代码重构与共享核心包 - 将 client 从 vectordb 迁移到 @lancedb/lancedb，创建共享的 lancedb-core 包，统一 client 和 server 的数据库服务架构",
+  "project": "ManceDB",
+  "branchName": "ralph/remove-authentication",
+  "description": "移除账号认证系统 - 用户打开应用后直接进入数据库连接界面，无需登录注册",
   "userStories": [
     {
       "id": "US-001",
-      "title": "创建 lancedb-core 共享包",
-      "description": "作为开发者，我需要一个共享的 LanceDB 核心包目录结构和基础配置，这样后续可以添加核心模块。",
+      "title": "移除 Server 端 JWT 认证中间件",
+      "description": "作为开发者，我需要移除或可选化 JWT 认证，使得 API 可以在无认证状态下访问。",
       "acceptanceCriteria": [
-        "创建 packages/lancedb-core 目录结构（src/connection, src/table, src/query, src/utils）",
-        "创建 package.json，配置 name 为 @mancedb/lancedb-core",
-        "配置 TypeScript（tsconfig.json），设置输出到 dist/",
-        "添加 @lancedb/lancedb ^0.26.2 作为依赖",
-        "添加 typedi 和 reflect-metadata 作为依赖",
-        "配置 exports 字段，导出 ./dist/index.js",
-        "更新 pnpm-workspace.yaml 包含新包",
+        "移除 AuthMiddleware 或将其改为可配置开关",
+        "移除 CurrentUser 装饰器及相关注入",
+        "更新 routing-controllers 配置，移除全局认证中间件",
+        "移除 JWT_SECRET 环境变量的强制要求",
+        "所有 API 端点可在无 token 状态下正常访问",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": ""
+      "notes": "Completed: Removed authHandler from app.ts, removed CurrentUser decorator, made JWT_SECRET optional, typecheck passes"
     },
     {
       "id": "US-002",
-      "title": "迁移共享类型定义到 dto 包",
-      "description": "作为开发者，我需要统一类型定义在 packages/dto 中，避免多处重复定义。",
+      "title": "移除 Server 端用户相关数据库表",
+      "description": "作为开发者，我需要移除用户相关的数据库表和迁移脚本。",
       "acceptanceCriteria": [
-        "在 packages/dto/src 创建 database.dto.ts，导出 TableInfo, DatabaseInfo 接口",
-        "在 packages/dto/src 创建 table.dto.ts，导出 ColumnInfo, TableSchema 接口",
-        "在 packages/dto/src 创建 query.dto.ts，导出 FilterCondition, TableDataResult 接口",
-        "更新 packages/dto/src/index.ts 导出所有新类型",
-        "编译 packages/dto 确保无错误",
+        "移除 users 表及相关索引",
+        "移除用户相关的迁移脚本（003-admin-tables.ts 中的用户部分）",
+        "确保数据库启动时不报错",
+        "保留其他必要的系统表（如连接配置表）",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Completed: Created database.dto.ts and table.dto.ts with all shared types, build passes"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "提取共享工具函数到 lancedb-core",
-      "description": "作为开发者，我需要复用过滤构建、Arrow 类型映射、行处理等工具函数。",
+      "title": "移除 Server 端用户服务和控制器",
+      "description": "作为开发者，我需要移除用户相关的服务和控制器代码。",
       "acceptanceCriteria": [
-        "创建 packages/lancedb-core/src/utils/filter-builder.ts，实现 buildWhereClause 函数",
-        "创建 packages/lancedb-core/src/utils/arrow-mapper.ts，实现 arrowTypeToString 函数",
-        "创建 packages/lancedb-core/src/utils/row-processor.ts，实现 processRow 和 isVector 函数",
-        "为每个工具函数添加 JSDoc 注释说明参数和返回值",
-        "创建 packages/lancedb-core/src/utils/index.ts 统一导出",
+        "删除 UserService 及相关 DTO",
+        "删除 AuthController 中的登录/注册/登出接口",
+        "从 Container 中移除用户服务注册",
+        "清理 AuthService 中 JWT 相关逻辑",
+        "确保其他控制器不依赖用户上下文",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Completed: Created all utility functions with full JSDoc, typecheck passes"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "实现 ConnectionManager 连接管理器",
-      "description": "作为开发者，我需要一个管理 LanceDB 连接的类，支持本地和 S3 存储。",
+      "title": "调整 Web 端路由和路由守卫",
+      "description": "作为用户，我打开 Web 应用后应该直接进入连接管理页面，不需要登录。",
       "acceptanceCriteria": [
-        "创建 packages/lancedb-core/src/connection/connection-manager.ts",
-        "实现 ConnectionManager 类，使用 @Service() 装饰器",
-        "实现 connect(uri: string, options?: ConnectionOptions) 方法，支持本地路径和 S3 URI",
-        "实现 getConnection(uri: string) 方法返回缓存的连接",
-        "实现 disconnect(uri: string) 方法关闭特定连接",
-        "使用单例模式管理连接缓存（Map<string, Connection>）",
-        "Typecheck passes"
+        "移除 AuthGuard 组件或使其自动通过",
+        "更新路由配置：默认路由改为 /connections",
+        "移除 /auth 路由及相关页面",
+        "移除 useAuth hook 或简化其实现",
+        "确保无需登录即可访问所有功能页面",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Completed: ConnectionManager implemented with full S3 support, typecheck and build pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "实现 SchemaManager Schema 管理器",
-      "description": "作为开发者，我需要一个解析 Arrow Schema 的类，提供标准化的列信息。",
+      "title": "移除 Web 端登录/注册页面",
+      "description": "作为用户，我不需要看到登录和注册界面。",
       "acceptanceCriteria": [
-        "创建 packages/lancedb-core/src/schema/schema-manager.ts",
-        "实现 SchemaManager 类，使用 @Service() 装饰器",
-        "实现 getTableSchema(table: Table) 方法，返回 ColumnInfo[]",
-        "正确解析 Arrow 字段类型（Int, Float, Utf8, Binary, FixedSizeList 等）",
-        "使用 arrow-mapper.ts 中的工具函数转换类型",
-        "Typecheck passes"
+        "删除 auth.tsx 登录页面",
+        "删除 startup-mode.tsx 中的登录相关 UI",
+        "移除登录表单组件",
+        "清理相关样式和国际化文案",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Completed: SchemaManager implemented with full Arrow schema parsing, typecheck and build pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-006",
-      "title": "实现 TableManager 表管理器",
-      "description": "作为开发者，我需要一个封装表 CRUD 操作的类。",
+      "title": "清理 Web 端认证状态管理",
+      "description": "作为开发者，我需要清理前端认证相关的状态管理代码。",
       "acceptanceCriteria": [
-        "创建 packages/lancedb-core/src/table/table-manager.ts",
-        "实现 TableManager 类，使用 @Service() 装饰器，注入 ConnectionManager",
-        "实现 getTables(uri: string) 方法，列出所有表名",
-        "实现 getTable(uri: string, tableName: string) 方法，返回 Table 对象",
-        "实现 createTable(uri: string, tableName: string, data: RecordBatch) 方法",
-        "实现 deleteTable(uri: string, tableName: string) 方法",
-        "实现 renameTable(uri: string, oldName: string, newName: string) 方法",
+        "移除 authStore 或简化其为空实现",
+        "移除 localStorage 中的 token 存储逻辑",
+        "更新 API client，移除 token 注入逻辑",
+        "清理 Authorization header 相关代码",
+        "确保 API 调用正常工作",
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Completed: TableManager implemented with full CRUD operations, typecheck and build pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-007",
-      "title": "实现 QueryEngine 查询引擎",
-      "description": "作为开发者，我需要一个支持过滤查询和 SQL 执行的查询引擎。",
+      "title": "调整 Client (Electron) 启动流程",
+      "description": "作为桌面应用用户，我打开应用后应该直接看到连接管理界面。",
       "acceptanceCriteria": [
-        "创建 packages/lancedb-core/src/query/query-engine.ts",
-        "实现 QueryEngine 类，使用 @Service() 装饰器",
-        "实现 queryTable(params) 方法，支持分页、排序、过滤",
-        "使用 table.query().where().limit() API 进行过滤查询",
-        "使用 filter-builder.ts 构建 where 条件",
-        "实现 executeSql(uri: string, sql: string) 方法执行 SQL SELECT",
-        "返回 TableDataResult 格式的结果，使用 row-processor.ts 处理行数据",
+        "移除主进程中登录窗口相关代码",
+        "调整启动窗口逻辑：直接加载连接页面",
+        "移除 IPC 中认证相关的通道",
+        "确保应用启动时无需等待认证",
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Completed: QueryEngine implemented with queryTable and executeSql methods, typecheck and build pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-008",
-      "title": "导出 lancedb-core 公共 API",
-      "description": "作为开发者，我需要从 lancedb-core 包导出所有公共模块，供外部使用。",
+      "title": "更新环境变量配置文档",
+      "description": "作为部署者，我需要了解新的环境变量要求。",
       "acceptanceCriteria": [
-        "更新 packages/lancedb-core/src/index.ts",
-        "导出 ConnectionManager 类",
-        "导出 SchemaManager 类",
-        "导出 TableManager 类",
-        "导出 QueryEngine 类",
-        "导出所有工具函数（filter-builder, arrow-mapper, row-processor）",
-        "运行 pnpm build 确保包可以成功编译",
-        "Typecheck passes"
+        "更新 ENVIRONMENT.md，移除 JWT_SECRET 必需标记",
+        "更新 .env.example 文件",
+        "更新 README 中的快速开始指南",
+        "文档说明应用现在无需认证即可使用"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Completed: Added schema module export, all classes and utilities exported, build and typecheck pass"
-    },
-    {
-      "id": "US-009",
-      "title": "重构 server 使用 lancedb-core - 数据库服务",
-      "description": "作为开发者，我需要让 server 的数据库服务使用共享的 lancedb-core 包。",
-      "acceptanceCriteria": [
-        "在 apps/server 添加 @mancedb/lancedb-core 依赖",
-        "更新 apps/server/src/sources/lancedb.ts，使用 ConnectionManager",
-        "更新 apps/server/src/services/database.service.ts，使用 TableManager 获取表列表",
-        "删除 server 中重复的工具函数（filter-builder, arrow-mapper）",
-        "更新类型导入，从 @mancedb/dto 导入 TableInfo, DatabaseInfo",
-        "Typecheck passes"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "Completed: Added lancedb-core dependency, refactored lancedb.ts and database.service.ts to use ConnectionManager and TableManager, typecheck and build pass"
-    },
-    {
-      "id": "US-010",
-      "title": "重构 server 使用 lancedb-core - 表和查询服务",
-      "description": "作为开发者，我需要让 server 的表服务和查询服务使用 lancedb-core。",
-      "acceptanceCriteria": [
-        "更新 apps/server/src/services/table.service.ts，使用 SchemaManager 和 QueryEngine",
-        "更新 apps/server/src/services/query.service.ts，使用 QueryEngine",
-        "删除 server 中重复的 row-processor 逻辑",
-        "确保所有现有 API 端点功能正常工作",
-        "Typecheck passes"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": "Completed: Refactored table.service.ts to use SchemaManager and QueryEngine, refactored query.service.ts to use QueryEngine, removed duplicate filter/row processing logic, typecheck and build pass"
-    },
-    {
-      "id": "US-011",
-      "title": "统一 client 的 DI 架构",
-      "description": "作为开发者，我需要 client 使用与 server 一致的依赖注入架构。",
-      "acceptanceCriteria": [
-        "在 apps/client 添加 typedi 和 reflect-metadata 依赖",
-        "创建 apps/client/src/main/container.ts，配置 TypeDI Container",
-        "更新 apps/client/src/main/main.ts，在应用启动时初始化 DI 容器",
-        "确保 container.ts 导入所有需要的服务",
-        "Typecheck passes"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": "Completed: Added typedi and reflect-metadata dependencies, created container.ts with TypeDI configuration, updated main.ts to initialize DI container on startup, typecheck and lint pass"
-    },
-    {
-      "id": "US-012",
-      "title": "重构 client 使用 lancedb-core - 升级 LanceDB 包",
-      "description": "作为开发者，我需要将 client 从 vectordb 迁移到 @lancedb/lancedb，并使用共享包。",
-      "acceptanceCriteria": [
-        "从 apps/client 移除 vectordb 依赖",
-        "在 apps/client 添加 @lancedb/lancedb ^0.26.2",
-        "在 apps/client 添加 @mancedb/lancedb-core 和 @mancedb/dto 依赖",
-        "更新 apps/client/src/main/services/lancedb.service.ts，使用 ConnectionManager, TableManager, QueryEngine",
-        "将 lancedb.service.ts 改为 TypeDI Service 类（使用 @Service()）",
-        "更新类型导入，从 @mancedb/dto 导入",
-        "确保本地数据库连接、查询、表操作功能正常",
-        "Typecheck passes"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Completed: Removed vectordb, added @lancedb/lancedb and lancedb-core dependencies, refactored lancedb.service.ts to use TypeDI with injected services, updated ipc-router.ts to use DI container, enabled decorators in tsconfig, added external deps to vite config, typecheck and build pass"
-    },
-    {
-      "id": "US-013",
-      "title": "重构 client 使用 lancedb-core - 更新 IPC 路由",
-      "description": "作为开发者，我需要更新 client 的 IPC 路由以适配新的 DI 服务架构。",
-      "acceptanceCriteria": [
-        "更新 apps/client/src/main/ipc-router.ts，从 DI 容器获取 LanceDBService",
-        "更新 IPC 处理器以调用新服务的方法",
-        "确保所有 IPC 端点响应格式保持不变",
-        "确保渲染进程到主进程的通信正常",
-        "Typecheck passes"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": "Completed as part of US-012: ipc-router.ts now uses Container.get(LanceDBService) to get service instance, all IPC handlers call new service methods, response format unchanged, typecheck passes"
-    },
-    {
-      "id": "US-014",
-      "title": "为 client 添加 S3 存储支持 - 凭证管理",
-      "description": "作为用户，我希望 Electron 客户端能安全地存储 S3 凭证。",
-      "acceptanceCriteria": [
-        "在 apps/client 添加 aws-sdk 依赖（@aws-sdk/client-s3）",
-        "创建 apps/client/src/main/services/credential.service.ts",
-        "实现 encryptCredential(credential: string) 方法，使用 safeStorage.encryptString",
-        "实现 decryptCredential(encrypted: Buffer) 方法，使用 safeStorage.decryptString",
-        "实现 saveS3Config(config: S3Config) 方法，加密存储到本地文件",
-        "实现 loadS3Config() 方法，从本地文件读取并解密",
-        "Typecheck passes"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": "Completed: Added @aws-sdk/client-s3 dependency, created credential.service.ts with full encryption/decryption support, save/load S3 config methods, updated CLAUDE.md, typecheck and lint pass"
-    },
-    {
-      "id": "US-015",
-      "title": "为 client 添加 S3 存储支持 - 连接配置 UI",
-      "description": "作为用户，我希望在 Electron 客户端中配置 S3 连接。",
-      "acceptanceCriteria": [
-        "创建或更新连接配置对话框组件，支持 S3 选项",
-        "添加 S3 配置表单字段：bucket, region, accessKeyId, secretAccessKey, endpoint（可选）",
-        "实现本地文件模式和 S3 模式的切换 UI",
-        "更新 IPC 通道，支持传递 S3 配置到主进程",
-        "在主进程中使用 ConnectionManager 连接 S3 URI",
-        "连接成功后显示数据库表列表",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 15,
-      "passes": true,
-      "notes": "Completed: Updated startup-mode.tsx with S3 connection mode, added S3 config form with all required fields, implemented IPC channels (db:testS3, db:connectS3), updated LanceDBService with S3 connection methods, credentials are securely stored using CredentialService"
-    },
-    {
-      "id": "US-016",
-      "title": "验证 client 和 server 功能一致性",
-      "description": "作为开发者，我需要确保重构后 client 和 server 功能完全一致。",
-      "acceptanceCriteria": [
-        "列出 client 和 server 的所有 API 端点，对比功能覆盖",
-        "测试 client 本地数据库的所有操作（连接、获取表列表、查询数据、CRUD）",
-        "测试 client S3 数据库连接和操作",
-        "测试 server 本地和 S3 数据库的所有操作",
-        "确保错误处理格式一致（APIResponse 结构）",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 16,
-      "passes": true,
-      "notes": "Completed: API comparison shows 100% coverage for core operations. Minor differences: query history (server persists, client ephemeral), column operations (server supports via newer API), error field name (msg vs message - UI handles both). Typecheck and build pass for all packages."
+      "passes": false,
+      "notes": ""
     }
   ]
 }
