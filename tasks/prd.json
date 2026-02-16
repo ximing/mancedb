@@ -119,8 +119,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: QueryEngine implemented with queryTable and executeSql methods, typecheck and build pass"
     },
     {
       "id": "US-008",
@@ -137,8 +137,8 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added schema module export, all classes and utilities exported, build and typecheck pass"
     },
     {
       "id": "US-009",

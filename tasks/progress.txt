@@ -347,5 +347,56 @@
 - 清空表通过删除+重建实现，保留原 schema 结构
 ---
 
+## 2026-02-17 10:00 - US-007
+- 创建 packages/lancedb-core/src/query/query-engine.ts
+- 实现 QueryEngine 类，使用 @Service() 装饰器，注入 ConnectionManager 和 TableManager
+- 实现 queryTable(params) 方法：
+  - 支持分页（page, pageSize）、过滤（filters）
+  - 使用 table.query().where().offset().limit() API
+  - 使用 filter-builder.ts 的 buildWhereClause 构建 WHERE 条件
+  - 使用 row-processor.ts 的 processRows 处理行数据（截取向量）
+  - 返回 TableDataResult 格式结果（rows, totalCount, page, pageSize, totalPages）
+- 实现 executeSql(uri, sql) 方法：
+  - 解析 SQL 提取表名（FROM clause）和 WHERE 子句
+  - 将 SQL WHERE 条件转换为 FilterCondition 数组
+  - 执行查询并返回 TableDataResult
+- 添加辅助方法：
+  - getFilteredCount: 获取过滤后的行数
+  - executeQuery: 执行分页查询
+  - recordToObject: 将 LanceDB 记录转换为普通对象
+  - parseSql: 解析 SQL SELECT 语句
+  - sqlWhereToFilters: 将 SQL WHERE 转换为 FilterCondition
+- 更新 packages/lancedb-core/src/query/index.ts 导出 QueryEngine
+- Typecheck passes, build passes
+
+**Learnings for future iterations:**
+- LanceDB Query API 不支持 orderBy 排序，需要通过其他方式实现排序
+- LanceDB Query API 支持 offset() 和 limit() 用于分页
+- SQL 解析使用正则表达式，仅支持基本的 SELECT * FROM table WHERE conditions 格式
+- processRows 会自动处理向量截断，避免大向量污染 UI
+- 依赖注入通过构造函数使用 @Inject(() => ServiceClass) 语法
+---
+
+## 2026-02-17 10:15 - US-008
+- 更新 packages/lancedb-core/src/index.ts，添加 schema 模块导出
+- 导出所有公共类和类型：
+  - ConnectionManager（连接管理器）
+  - SchemaManager（Schema 管理器）
+  - TableManager（表管理器）
+  - QueryEngine（查询引擎）
+- 导出所有工具函数：
+  - filter-builder: buildWhereClause, buildSingleFilter, buildFilterString, escapeFilterValue, buildIdFilter
+  - arrow-mapper: mapArrowTypeToDisplayType, parseVectorType, isVectorType, getTypeByteSize, mapDisplayTypeToArrowSql
+  - row-processor: isVector, processRow, processValue, processRows, truncateVector, getVectorStats
+- 导出类型：ConnectionOptions, S3ConnectionConfig, CreateTableOptions, QueryTableParams
+- 运行 pnpm build 成功编译
+- Typecheck passes
+
+**Learnings for future iterations:**
+- 主入口文件 index.ts 需要显式导出所有子模块（connection, schema, table, query, utils）
+- 类型定义文件 dist/index.d.ts 会自动合并所有导出，包含完整的 JSDoc 注释
+- 确保每个子模块都有 index.ts 文件统一导出，方便主入口批量导出
+---
+
 ## Notes
 
