@@ -5,7 +5,63 @@
 - Electron Native Modules: Add native dependencies like @lancedb/lancedb to rollup external in vite.config.ts
 - TypeScript Decorators: Enable experimentalDecorators and emitDecoratorMetadata in tsconfig for TypeDI
 - IPC Router DI Pattern: Use Container.get(ServiceClass) in a helper function to retrieve services
+- Electron Credential Storage: Use safeStorage API for encrypting/decrypting sensitive data like S3 credentials
+- S3 Connection Flow: UI collects S3 config -> IPC db:testS3 validates -> IPC db:connectS3 connects + saves credentials securely
+- S3Config Property Names: Use awsAccessKeyId and awsSecretAccessKey (matching CredentialService interface)
+- Electron IPC Pattern: Add new channels to VALID_INVOKE_CHANNELS in preload/index.ts before using in renderer
 
+---
+
+## 2026-02-16 22:00 - US-015
+- Updated apps/web/src/pages/startup/startup-mode.tsx:
+  - Added 's3' as a third startup mode option alongside 'remote' and 'local'
+  - Created S3Config interface matching credential.service.ts
+  - Added S3 configuration form with fields: name, bucket, region, prefix, endpoint, awsAccessKeyId, awsSecretAccessKey
+  - Implemented testS3Connection() helper for connection validation
+  - Added S3 mode handling in handleContinue() with validation and IPC calls
+  - Added show/hide toggle for secret access key input
+- Updated apps/client/src/main/ipc-router.ts:
+  - Added 'db:testS3' IPC handler for testing S3 connections
+  - Added 'db:connectS3' IPC handler that connects and securely saves credentials
+  - Imported CredentialService for secure credential storage
+- Updated apps/client/src/preload/index.ts:
+  - Added 'db:testS3' and 'db:connectS3' to VALID_INVOKE_CHANNELS
+- Updated apps/client/src/main/services/lancedb.service.ts:
+  - Added connectToS3Database(config) method using ConnectionManager with S3 options
+  - Added testS3Connection(config) method for validating S3 credentials
+  - Both methods build s3:// URI from bucket and prefix
+- Typecheck passes for both apps/client and apps/web
+- Lint passes with only pre-existing warnings
+
+**Learnings for future iterations:**
+- S3Config interface must match between renderer and main processes for type safety
+- ConnectionManager expects { storageType: 's3', s3Config: {...} } format
+- Credentials are encrypted by CredentialService using Electron's safeStorage API
+- The startup-mode.tsx handles three modes: remote (HTTP), local (file), s3 (S3 storage)
+- Always add new IPC channels to VALID_INVOKE_CHANNELS in preload script
+---
+
+## 2026-02-16 20:30 - US-014
+- Added @aws-sdk/client-s3 ^3.744.0 dependency to apps/client
+- Created apps/client/src/main/services/credential.service.ts:
+  - encryptCredential(): Encrypts strings using safeStorage.encryptString()
+  - decryptCredential(): Decrypts buffers using safeStorage.decryptString()
+  - saveS3Config(): Saves S3 config with encrypted credentials to userData/s3-configs.json
+  - loadS3Config(): Loads and decrypts S3 config by bucket name
+  - loadAllS3Configs(): Lists all saved configs without exposing credentials
+  - deleteS3Config(): Removes a saved S3 configuration
+  - isEncryptionAvailable(): Checks if encryption is available on the system
+- CredentialService uses TypeDI @Service() decorator for DI integration
+- Encrypted credentials stored as base64-encoded strings in JSON file
+- Updated CLAUDE.md with Credential Service documentation section
+- Typecheck passes, lint passes
+
+**Learnings for future iterations:**
+- Electron's safeStorage API provides system-native encryption (Keychain on macOS, DPAPI on Windows, etc.)
+- Always check safeStorage.isEncryptionAvailable() before encrypting/decrypting
+- Store encrypted buffers as base64 strings for JSON serialization
+- The userData directory is the appropriate place for app-specific config files
+- TypeDI services are automatically registered when imported via container.ts's dynamic import
 ---
 
 ## 2026-02-16 19:00 - US-013

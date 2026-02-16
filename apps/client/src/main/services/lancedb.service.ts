@@ -25,6 +25,7 @@ import type {
   DeleteRowsResult,
 } from '@mancedb/dto';
 import type { TableDataQueryOptions } from '@mancedb/dto';
+import type { S3Config } from './credential.service';
 
 /**
  * Result of executing a SQL query
@@ -365,6 +366,75 @@ export class LanceDBService {
       return {
         success: false,
         message: `Connection failed: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * Connect to an S3 database
+   */
+  async connectToS3Database(config: S3Config): Promise<void> {
+    const { bucket, region, awsAccessKeyId, awsSecretAccessKey, endpoint, prefix } = config;
+
+    // Build S3 URI
+    let s3Uri = `s3://${bucket}`;
+    if (prefix) {
+      s3Uri = `${s3Uri}/${prefix.replace(/^\//, '').replace(/\/$/, '')}`;
+    }
+
+    // Connect via ConnectionManager with S3 options
+    await this.connectionManager.connect(s3Uri, {
+      storageType: 's3',
+      s3Config: {
+        bucket,
+        region,
+        awsAccessKeyId,
+        awsSecretAccessKey,
+        endpoint: endpoint || undefined,
+      },
+    });
+
+    this.activeConnection = {
+      uri: s3Uri,
+      type: 's3',
+    };
+  }
+
+  /**
+   * Test S3 database connection
+   */
+  async testS3Connection(config: S3Config): Promise<{ success: boolean; message: string }> {
+    try {
+      const { bucket, region, awsAccessKeyId, awsSecretAccessKey, endpoint, prefix } = config;
+
+      // Build S3 URI
+      let s3Uri = `s3://${bucket}`;
+      if (prefix) {
+        s3Uri = `${s3Uri}/${prefix.replace(/^\//, '').replace(/\/$/, '')}`;
+      }
+
+      // Try to connect with S3 options
+      const connection = await this.connectionManager.connect(s3Uri, {
+        storageType: 's3',
+        s3Config: {
+          bucket,
+          region,
+          awsAccessKeyId,
+          awsSecretAccessKey,
+          endpoint: endpoint || undefined,
+        },
+      });
+
+      const tableNames = await connection.tableNames();
+
+      return {
+        success: true,
+        message: `Connected successfully to S3. Found ${tableNames.length} tables.`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `S3 connection failed: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }

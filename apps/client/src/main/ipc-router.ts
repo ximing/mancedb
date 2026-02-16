@@ -6,7 +6,9 @@
 import { ipcMain } from 'electron';
 import { Container } from 'typedi';
 import { LanceDBService } from './services/lancedb.service';
+import { CredentialService } from './services/credential.service';
 import type { FilterCondition } from '@mancedb/dto';
+import type { S3Config } from './services/credential.service';
 
 // IPC request options type (mirrors the one in web app)
 interface IPCRequestOptions {
@@ -45,6 +47,13 @@ function errorResponse(message: string, code = -1): APIResponse<null> {
  */
 function getLanceDBService(): LanceDBService {
   return Container.get(LanceDBService);
+}
+
+/**
+ * Get the CredentialService instance from the DI container
+ */
+function getCredentialService(): CredentialService {
+  return Container.get(CredentialService);
 }
 
 /**
@@ -254,9 +263,44 @@ export function registerIPCHandlers(): void {
   });
 
   // Handle test connection
-  ipcMain.handle('db:test', async (_event, dbPath: string) => {
+  ipcMain.handle('db:test', async (_event, { path }: { path: string }) => {
     const lancedbService = getLanceDBService();
-    return lancedbService.testConnection(dbPath);
+    return lancedbService.testConnection(path);
+  });
+
+  // Handle test S3 connection
+  ipcMain.handle('db:testS3', async (_event, config: S3Config) => {
+    const lancedbService = getLanceDBService();
+    return lancedbService.testS3Connection(config);
+  });
+
+  // Handle S3 database connection
+  ipcMain.handle('db:connectS3', async (_event, config: S3Config) => {
+    try {
+      const lancedbService = getLanceDBService();
+      const credentialService = getCredentialService();
+
+      // Connect to S3 database
+      await lancedbService.connectToS3Database(config);
+
+      // Save credentials securely
+      await credentialService.saveS3Config({
+        name: config.name || config.bucket,
+        bucket: config.bucket,
+        region: config.region,
+        endpoint: config.endpoint,
+        prefix: config.prefix,
+        awsAccessKeyId: config.awsAccessKeyId,
+        awsSecretAccessKey: config.awsSecretAccessKey,
+      });
+
+      return { success: true, message: 'Connected to S3 successfully' };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to connect to S3 database',
+      };
+    }
   });
 
   console.log('[IPC Router] Registered IPC handlers');
