@@ -17,6 +17,25 @@
 - Migration Pattern: When removing a table, replace its migration with a placeholder to maintain version sequence
 - DTO Removal Pattern: When removing DTO exports, check all consumers to ensure they don't break; replace with inline types if needed
 - Auth Removal Pattern: When removing auth, simplify ProtectedRoute to just render children and make AuthService always return authenticated state
+- Auth Page Removal Pattern: When removing auth pages, also delete the entire directory including components subdirectory and index.tsx entry point
+
+---
+
+## 2026-02-17 - US-005
+- Deleted auth.tsx login page (apps/web/src/pages/auth/auth.tsx)
+- Deleted login form component (apps/web/src/pages/auth/components/login-form.tsx)
+- Deleted register form component (apps/web/src/pages/auth/components/register-form.tsx)
+- Deleted auth entry point (apps/web/src/pages/auth/index.tsx)
+- Removed entire apps/web/src/pages/auth/ directory
+- startup-mode.tsx was already cleaned in US-004 (no login-related UI found)
+- Typecheck passes for web package
+- Lint passes with only pre-existing warnings
+
+**Learnings for future iterations:**
+- When removing auth pages, delete the entire directory including components subdirectory
+- Connection-level authentication (connection-login.tsx, ConnectionAuthService) is separate from user auth and should be kept
+- AuthService is kept as a simplified stub for backward compatibility with existing components
+- The layout.tsx component has unused auth code but is not currently used in the app
 
 ---
 

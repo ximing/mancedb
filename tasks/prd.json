@@ -80,8 +80,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Deleted auth.tsx, login-form.tsx, register-form.tsx, and auth/index.tsx. Removed entire apps/web/src/pages/auth/ directory. Typecheck passes."
     },
     {
       "id": "US-006",
