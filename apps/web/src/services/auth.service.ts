@@ -1,55 +1,40 @@
 import { Service } from '@rabjs/react';
-import { login as loginApi, register as registerApi } from '../api/auth';
 
-interface User {
-  uid: string;
-  email?: string;
-  phone?: string;
-  nickname?: string;
-  avatar?: string;
-}
-
+/**
+ * AuthService - DEPRECATED
+ * Authentication has been removed from the application.
+ * This service is kept for backward compatibility but always returns authenticated state.
+ */
 export class AuthService extends Service {
-  isAuthenticated = false;
-  user: User | null = null;
-  token: string | null = localStorage.getItem('token');
+  /** Always true - authentication removed */
+  isAuthenticated = true;
+  user = null;
+  token = null;
 
   constructor() {
     super();
-    // Check if token exists on initialization
-    if (this.token) {
-      this.isAuthenticated = true;
-    }
-  }
-
-  async login(email: string, password: string): Promise<boolean> {
-    const response = await loginApi({ email, password });
-    const responseData = response.data as unknown as Record<string, unknown>;
-    if (response.code === 0 && responseData.token && typeof responseData.token === 'string') {
-      this.token = responseData.token;
-      this.isAuthenticated = true;
-      localStorage.setItem('token', responseData.token);
-      return true;
-    }
-    return false;
-  }
-
-  async register(email: string, password: string, nickname?: string): Promise<boolean> {
-    const response = await registerApi({ email, password, nickname });
-    const responseData = response.data as unknown as Record<string, unknown>;
-    if (response.code === 0 && responseData.token && typeof responseData.token === 'string') {
-      this.token = responseData.token;
-      this.isAuthenticated = true;
-      localStorage.setItem('token', responseData.token);
-      return true;
-    }
-    return false;
-  }
-
-  logout(): void {
-    this.token = null;
-    this.isAuthenticated = false;
-    this.user = null;
+    // Clean up any leftover token from localStorage
     localStorage.removeItem('token');
+  }
+
+  /**
+   * @deprecated Authentication removed, always returns true
+   */
+  async login(): Promise<boolean> {
+    return true;
+  }
+
+  /**
+   * @deprecated Authentication removed, always returns true
+   */
+  async register(): Promise<boolean> {
+    return true;
+  }
+
+  /**
+   * @deprecated Authentication removed, no-op
+   */
+  logout(): void {
+    // No-op
   }
 }

@@ -1,12 +1,9 @@
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router';
-import AuthPage from './pages/auth';
 import StartupModePage from './pages/startup';
 import { ConnectionListPage } from './pages/connections/connection-list';
 import { ConnectionFormPage } from './pages/connections/connection-form';
-import { ConnectionLoginPage } from './pages/connection-login/connection-login';
 import { MainLayout } from './pages/database/components/main-layout';
 import { DatabaseContent } from './pages/database/components/database-content';
-import { ProtectedRoute } from './components/protected-route';
 import { ConnectionProtectedRoute } from './components/connection-protected-route';
 import { isElectron } from './utils/environment';
 
@@ -20,54 +17,25 @@ function App() {
       <Routes>
         {/* Startup mode selection (Electron only) */}
         <Route path="/startup" element={<StartupModePage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <ConnectionListPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* Default route: Connection list page */}
+        <Route path="/" element={<Navigate to="/connections" replace />} />
+        {/* Connection list page */}
+        <Route path="/connections" element={<ConnectionListPage />} />
         {/* Connection form routes */}
-        <Route
-          path="/connections/new"
-          element={
-            <ProtectedRoute>
-              <ConnectionFormPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/connections/:id/edit"
-          element={
-            <ProtectedRoute>
-              <ConnectionFormPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/connections/:id/login"
-          element={
-            <ProtectedRoute>
-              <ConnectionLoginPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/connections/new" element={<ConnectionFormPage />} />
+        <Route path="/connections/:id/edit" element={<ConnectionFormPage />} />
         {/* Database browser routes */}
         <Route
           path="/connections/:id/database"
           element={
-            <ProtectedRoute>
-              <ConnectionProtectedRoute>
-                <MainLayout>
-                  <DatabaseContent />
-                </MainLayout>
-              </ConnectionProtectedRoute>
-            </ProtectedRoute>
+            <ConnectionProtectedRoute>
+              <MainLayout>
+                <DatabaseContent />
+              </MainLayout>
+            </ConnectionProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/connections" replace />} />
       </Routes>
     </Router>
   );

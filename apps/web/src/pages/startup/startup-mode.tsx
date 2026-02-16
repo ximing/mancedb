@@ -202,9 +202,14 @@ export const StartupModePage = view(() => {
       if (!electronAPI?.invoke) {
         return false;
       }
-      const result = await electronAPI.invoke('db:test', { path: localPath }) as { success: boolean };
+      const result = await electronAPI.invoke('db:test', { path: localPath }) as { success: boolean; message?: string };
+      if (!result.success) {
+        console.error('Local connection test failed:', result.message);
+        setError(result.message || 'Cannot connect to local database. Please check the path and try again.');
+      }
       return result.success === true;
-    } catch {
+    } catch (err) {
+      console.error('Local connection test error:', err);
       return false;
     }
   };
@@ -256,8 +261,8 @@ export const StartupModePage = view(() => {
         localStorage.setItem(STORAGE_KEY_MODE, 'remote');
         localStorage.setItem(STORAGE_KEY_SERVER_URL, serverUrl);
 
-        // Navigate to auth page
-        navigate('/auth');
+        // Navigate to connections page (authentication removed)
+        navigate('/connections');
       } else if (selectedMode === 'local') {
         // Local mode
         if (!localPath.trim()) {
@@ -346,10 +351,10 @@ export const StartupModePage = view(() => {
     }
   };
 
-  // If not in Electron, redirect to auth page
+  // If not in Electron, redirect to connections page
   useEffect(() => {
     if (!isElectron()) {
-      navigate('/auth');
+      navigate('/connections');
     }
   }, [navigate]);
 
@@ -368,7 +373,7 @@ export const StartupModePage = view(() => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                LanceDB Admin
+                ManceDB
               </h1>
               <p className="text-sm text-gray-500 dark:text-dark-400">
                 Desktop Client
@@ -395,7 +400,7 @@ export const StartupModePage = view(() => {
           <div className="space-y-4 mb-8">
             <ModeCard
               title="Connect to Remote Server"
-              description="Connect to a LanceDB Admin server over the network. Requires authentication."
+              description="Connect to a ManceDB server over the network."
               icon={<CloudIcon />}
               selected={selectedMode === 'remote'}
               onClick={() => {
@@ -453,7 +458,7 @@ export const StartupModePage = view(() => {
                     className="w-full px-4 py-2.5 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all placeholder-gray-400 dark:placeholder-dark-500"
                   />
                   <p className="text-xs text-gray-500 dark:text-dark-500 mt-1">
-                    Enter the URL of your LanceDB Admin server
+                    Enter the URL of your ManceDB server
                   </p>
                 </div>
               </div>
