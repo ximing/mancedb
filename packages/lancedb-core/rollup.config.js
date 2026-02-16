@@ -1,3 +1,11 @@
-import { defineConfig } from '@mancedb/rollup-config';
+import { createRollupConfig } from '@mancedb/rollup-config';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
 
-export default defineConfig();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const packageDir = resolve(__dirname);
+
+export default createRollupConfig({
+  input: 'src/index.ts',
+  packageDir,
+});
