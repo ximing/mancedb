@@ -17,7 +17,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "outDir": "dist/main",
-    "rootDir": "src/main"
+    "rootDir": "src/main",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src/main/**/*"],
   "exclude": ["node_modules", "dist"]

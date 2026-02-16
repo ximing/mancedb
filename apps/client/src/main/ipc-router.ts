@@ -4,7 +4,9 @@
  */
 
 import { ipcMain } from 'electron';
-import * as lancedbService from './services/lancedb.service';
+import { Container } from 'typedi';
+import { LanceDBService } from './services/lancedb.service';
+import type { FilterCondition } from '@mancedb/dto';
 
 // IPC request options type (mirrors the one in web app)
 interface IPCRequestOptions {
@@ -39,11 +41,19 @@ function errorResponse(message: string, code = -1): APIResponse<null> {
 }
 
 /**
+ * Get the LanceDBService instance from the DI container
+ */
+function getLanceDBService(): LanceDBService {
+  return Container.get(LanceDBService);
+}
+
+/**
  * Route API request to the appropriate handler
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any>> {
   const { method, endpoint, data, params } = options;
+  const lancedbService = getLanceDBService();
 
   console.log(`[IPC Router] ${method} ${endpoint}`, { data, params });
 
@@ -75,7 +85,7 @@ async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any
         pageSize?: number;
         sortColumn?: string;
         sortOrder?: 'asc' | 'desc';
-        filters?: lancedbService.FilterCondition[];
+        filters?: FilterCondition[];
       });
       return successResponse(result);
     }
@@ -116,7 +126,7 @@ async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any
     const deleteRowsMatch = endpoint.match(/^\/api\/v1\/tables\/([^/]+)\/rows$/);
     if (deleteRowsMatch && method === 'DELETE') {
       const tableName = decodeURIComponent(deleteRowsMatch[1]);
-      const { filters, whereClause } = data as { filters?: lancedbService.FilterCondition[]; whereClause?: string };
+      const { filters, whereClause } = data as { filters?: FilterCondition[]; whereClause?: string };
       const result = await lancedbService.deleteRows(tableName, { filters, whereClause });
       return successResponse(result);
     }
@@ -225,6 +235,7 @@ export function registerIPCHandlers(): void {
   // Handle database connection
   ipcMain.handle('db:connect', async (_event, dbPath: string) => {
     try {
+      const lancedbService = getLanceDBService();
       await lancedbService.connectToDatabase(dbPath);
       return { success: true, message: 'Connected successfully' };
     } catch (error) {
@@ -237,12 +248,14 @@ export function registerIPCHandlers(): void {
 
   // Handle database disconnect
   ipcMain.handle('db:disconnect', async () => {
+    const lancedbService = getLanceDBService();
     await lancedbService.closeConnection();
     return { success: true };
   });
 
   // Handle test connection
   ipcMain.handle('db:test', async (_event, dbPath: string) => {
+    const lancedbService = getLanceDBService();
     return lancedbService.testConnection(dbPath);
   });
 

@@ -161,10 +161,11 @@ export const StartupModePage = view(() => {
   // Test local connection
   const testLocalConnection = async (): Promise<boolean> => {
     try {
-      if (!window.electronAPI) {
+      const electronAPI = window.electronAPI;
+      if (!electronAPI?.invoke) {
         return false;
       }
-      const result = await window.electronAPI.invoke('db:test', { path: localPath });
+      const result = await electronAPI.invoke('db:test', { path: localPath }) as { success: boolean };
       return result.success === true;
     } catch {
       return false;
@@ -230,8 +231,9 @@ export const StartupModePage = view(() => {
         localStorage.setItem(STORAGE_KEY_LOCAL_PATH, localPath);
 
         // Connect to the local database via IPC
-        if (window.electronAPI) {
-          await window.electronAPI.invoke('db:connect', { path: localPath });
+        const electronAPI = window.electronAPI;
+        if (electronAPI?.invoke) {
+          await electronAPI.invoke('db:connect', { path: localPath });
         }
 
         // Navigate to database browser (skip auth for local mode)

@@ -10,7 +10,7 @@ export interface ElectronAPI {
    * Invoke a channel and get a promise result
    * Used for API requests in local mode
    */
-  invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
+  invoke?: (channel: string, ...args: unknown[]) => Promise<unknown>;
 }
 
 declare global {

@@ -22,7 +22,7 @@ export default defineConfig({
             minify: false,
             outDir: 'dist/main',
             rollupOptions: {
-              external: ['electron'],
+              external: ['electron', '@lancedb/lancedb', '@mancedb/lancedb-core', '@mancedb/dto', 'typedi', 'reflect-metadata'],
             },
           },
         },

@@ -8,6 +8,9 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Import lancedb-core services to ensure they're registered with TypeDI
+import '@mancedb/lancedb-core';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

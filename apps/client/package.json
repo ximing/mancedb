@@ -37,9 +37,11 @@
     "vite-plugin-electron-renderer": "^0.14.6"
   },
   "dependencies": {
+    "@lancedb/lancedb": "^0.26.2",
+    "@mancedb/dto": "workspace:*",
+    "@mancedb/lancedb-core": "workspace:*",
     "electron-updater": "^6.7.3",
     "reflect-metadata": "^0.2.2",
-    "typedi": "^0.10.0",
-    "vectordb": "^0.21.2"
+    "typedi": "^0.10.0"
   }
 }

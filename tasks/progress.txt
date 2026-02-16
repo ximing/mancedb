@@ -1,4 +1,31 @@
 ## Codebase Patterns
+- TypeDI Dependency Injection: Import 'reflect-metadata' at the top of main entry file before any other imports
+- TypeDI Service Registration: Use dynamic imports in initContainer() to trigger @Service() decorators
+- Electron Main Process DI: Initialize container in app.whenReady() before registering IPC handlers
+
+---
+
+## 2026-02-16 16:45 - US-011
+- Added typedi (^0.10.0) and reflect-metadata (^0.2.2) dependencies to apps/client
+- Created apps/client/src/main/container.ts with TypeDI Container configuration
+  - initContainer() function dynamically imports all service files to register @Service() decorators
+  - getService() helper for retrieving service instances from container
+  - Re-exports Container from typedi for direct access
+- Updated apps/client/src/main/index.ts:
+  - Added 'import "reflect-metadata"' at the very top (required for TypeDI)
+  - Imported initContainer from './container'
+  - Made app.whenReady() callback async and added await initContainer() call
+- Typecheck passes, lint passes
+
+**Learnings for future iterations:**
+- reflect-metadata must be imported BEFORE any other imports that use decorators
+- TypeDI services are registered when their files are imported (the @Service() decorator executes)
+- Dynamic import of service files ensures all decorated classes are registered with the container
+- Container initialization should happen early in app lifecycle, before IPC handlers are registered
+- The pattern mirrors the server-side IOC setup but simplified for Electron's single-process model
+---
+
+## Codebase Patterns
 - Electron 项目使用 vite-plugin-electron 实现热重载开发
 - TypeScript 配置使用 project references 分别配置 main/preload/renderer 进程
 - 类型定义放在 src/types/ 目录，通过 import 在需要的地方引入
