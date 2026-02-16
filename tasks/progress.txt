@@ -322,5 +322,30 @@
 - Table 对象由调用方提供，保持 SchemaManager 的纯粹性
 ---
 
+## 2026-02-17 09:00 - US-006
+- 创建 packages/lancedb-core/src/table/table-manager.ts
+  - TableManager 类使用 @Service() 装饰器，注入 ConnectionManager 和 SchemaManager
+  - getTables(uri) 方法列出所有表，返回 TableInfo[] 包含行数和大小
+  - getTableCount(uri) 获取表数量
+  - tableExists(uri, tableName) 检查表是否存在
+  - getTable(uri, tableName) 获取 Table 对象
+  - createTable(uri, tableName, data, options) 创建新表，支持 overwrite/ignoreIfExists
+  - createEmptyTable(uri, tableName, columns, options) 创建空表（带 schema）
+  - deleteTable(uri, tableName) 删除表
+  - renameTable(uri, oldName, newName) 重命名表（复制+删除实现）
+  - copyTable(uri, sourceName, targetName, options) 复制表
+  - getTableStats(uri, tableName) 获取表统计信息
+  - clearTable(uri, tableName) 清空表数据
+- 更新 packages/lancedb-core/src/table/index.ts 导出 TableManager
+- Typecheck passes, build passes
+
+**Learnings for future iterations:**
+- TableManager 依赖 ConnectionManager 和 SchemaManager，通过构造函数注入
+- LanceDB 不支持原生 rename，需要通过复制数据+删除旧表实现
+- LanceDB 创建表时必须提供数据，createEmptyTable 使用单条样本数据 workaround
+- table.query().limit(N).toArray() 是获取表数据的方式（N 需要足够大）
+- 清空表通过删除+重建实现，保留原 schema 结构
+---
+
 ## Notes
 
