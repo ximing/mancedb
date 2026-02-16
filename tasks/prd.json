@@ -78,8 +78,8 @@
         "类型检查通过"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Installed vectordb SDK. Created lancedb.service.ts with full CRUD operations. Created ipc-router.ts to map all web API endpoints to local LanceDB operations. All API calls from web app now work in local mode via IPC."
     },
     {
       "id": "US-006",

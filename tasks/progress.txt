@@ -3,6 +3,9 @@
 - TypeScript 配置使用 project references 分别配置 main/preload/renderer 进程
 - 类型定义放在 src/types/ 目录，通过 import 在需要的地方引入
 - IPC 通信使用 contextBridge 暴露 API，避免直接暴露 ipcRenderer
+- LanceDB Node.js SDK (vectordb) 使用 `connect()` 连接数据库，`table.search([])` 查询数据
+- IPC Router 模式：main 进程注册 `api:request` handler，将 HTTP-like 请求路由到本地服务方法
+- LanceDB 限制：不支持添加/删除列、不支持表重命名（需复制数据实现）
 
 ---
 
@@ -18,7 +21,7 @@
 [x] US-002: 集成 Web 应用到 Electron
 [x] US-003: 实现 Web 项目 Electron 适配改造
 [x] US-004: 实现本地文件系统访问
-[ ] US-005: 实现原生 LanceDB 连接模式
+[x] US-005: 实现原生 LanceDB 连接模式
 [ ] US-006: 实现连接模式切换 UI
 [ ] US-007: 添加系统集成特性
 [ ] US-008: 实现自动更新检查
@@ -90,6 +93,33 @@
 - 通过 BrowserWindow.getAllWindows()[0] 获取主窗口作为对话框的父窗口
 - 在 UI 中使用 `isElectron()` 检测环境，条件显示 Electron 特有功能
 - 对话框的权限错误（如无法访问文件夹）由 Electron 自动处理并显示系统错误对话框
+---
+
+## 2026-02-16 20:00 - US-005
+- 安装 LanceDB Node.js SDK (vectordb) 到 apps/client
+- 创建 lancedb.service.ts：实现所有数据库操作
+  - 连接管理：connectToDatabase, closeConnection, testConnection
+  - 数据库信息：getDatabaseInfo, getTables
+  - 表操作：getTableSchema, getTableData, deleteTable, renameTable
+  - 数据操作：deleteRows, deleteRowById
+  - 查询：executeQuery（支持基本 SELECT * FROM）
+  - 列操作：addColumn, dropColumn（抛出错误 - LanceDB 不支持）
+- 创建 ipc-router.ts：将 HTTP API 映射到 LanceDB 服务
+  - 注册 `api:request` IPC handler 处理所有 API 请求
+  - 路由表覆盖所有 web app API 端点
+  - 本地模式 mock 认证响应（免登录）
+  - 新增 IPC 通道：db:connect, db:disconnect, db:test
+- 更新 preload/index.ts：添加新的 IPC 通道到 VALID_INVOKE_CHANNELS
+- 更新 main/index.ts：在 app.whenReady 中注册 IPC handlers
+- 类型检查通过，lint 通过
+
+**Learnings for future iterations:**
+- LanceDB SDK 使用 `connect(uri)` 连接数据库，`table.search(vector)` 查询数据
+- 非向量查询时使用 `table.search([])` 然后配合 `.filter()` 和 `.limit()`
+- LanceDB 表结构基于 Apache Arrow，schema 包含字段名、类型、nullable 信息
+- LanceDB 限制：不支持 ALTER TABLE（添加/删除列），不支持 RENAME TABLE
+- IPC Router 模式让 web app 代码无需修改即可在 Electron 本地模式运行
+- 使用 `void variable` 模式避免未使用参数警告（替代 underscore prefix）
 ---
 
 ## Notes
