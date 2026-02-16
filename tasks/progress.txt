@@ -16,7 +16,39 @@
 - JWT Removal Pattern: When removing JWT auth, provide fallback secrets for type compatibility in deprecated services
 - Migration Pattern: When removing a table, replace its migration with a placeholder to maintain version sequence
 - DTO Removal Pattern: When removing DTO exports, check all consumers to ensure they don't break; replace with inline types if needed
+- Auth Removal Pattern: When removing auth, simplify ProtectedRoute to just render children and make AuthService always return authenticated state
 
+---
+
+## 2026-02-17 - US-004
+- Simplified ProtectedRoute component (apps/web/src/components/protected-route.tsx)
+  - Removed authentication check, now always renders children
+  - Marked as @deprecated since authentication is removed
+- Updated App.tsx routing (apps/web/src/App.tsx)
+  - Removed /auth route and AuthPage import
+  - Changed default route from / to /connections
+  - Removed ProtectedRoute wrapper from all routes
+  - Removed ConnectionLoginPage route (no longer needed)
+  - All routes now directly accessible without authentication
+- Simplified AuthService (apps/web/src/services/auth.service.ts)
+  - isAuthenticated always returns true
+  - login() and register() always return true
+  - logout() is now a no-op
+  - Constructor cleans up leftover token from localStorage
+  - Removed all API calls to auth endpoints
+- Updated startup-mode.tsx (apps/web/src/pages/startup/startup-mode.tsx)
+  - Remote mode now navigates to /connections instead of /auth
+  - Non-Electron redirect now goes to /connections instead of /auth
+  - Removed "Requires authentication" from remote mode description
+- Typecheck passes for web package
+- Lint passes with only pre-existing warnings
+
+**Learnings for future iterations:**
+- When removing auth, simplify ProtectedRoute to just render children (maintains backward compatibility)
+- AuthService can be simplified to always return authenticated state (no API calls needed)
+- Clean up localStorage tokens when auth is removed to avoid stale data
+- Remove /auth route and redirect default route to the main page (/connections)
+- ConnectionProtectedRoute is kept for connection-level auth (separate from user auth)
 ---
 
 ## 2026-02-17 - US-003
