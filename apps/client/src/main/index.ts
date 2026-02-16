@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import path from 'node:path';
 
 const createWindow = () => {
@@ -51,4 +51,22 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// IPC handler for opening directory dialog
+ipcMain.handle('dialog:openDirectory', async () => {
+  const mainWindow = BrowserWindow.getAllWindows()[0];
+  if (!mainWindow) return null;
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Select LanceDB Database Folder',
+    buttonLabel: 'Select Folder',
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return result.filePaths[0];
 });

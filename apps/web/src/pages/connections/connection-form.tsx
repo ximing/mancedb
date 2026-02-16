@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { view, useService } from '@rabjs/react';
 import { ConnectionService } from '../../services/connection.service';
+import { isElectron } from '../../utils/environment';
 import type { CreateConnectionDto, UpdateConnectionDto } from '@mancedb/dto';
 
 // Icons as simple SVG components
@@ -58,6 +59,12 @@ const LoaderIcon = () => (
   <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+);
+
+const FolderOpenIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
   </svg>
 );
 
@@ -475,16 +482,54 @@ export const ConnectionFormPage = view(() => {
               />
 
               {formData.type === 'local' ? (
-                <FormField
-                  label="Local Path"
-                  name="localPath"
-                  value={formData.localPath || ''}
-                  onChange={(value) => updateField('localPath', value)}
-                  placeholder="/path/to/lancedb"
-                  required
-                  error={errors.localPath}
-                  helpText="Absolute path to the LanceDB directory on the server"
-                />
+                <div className="space-y-1.5">
+                  <label htmlFor="localPath" className="block text-sm font-medium text-gray-700 dark:text-dark-300">
+                    Local Path
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="localPath"
+                      name="localPath"
+                      type="text"
+                      value={formData.localPath || ''}
+                      onChange={(e) => updateField('localPath', e.target.value)}
+                      placeholder="/path/to/lancedb"
+                      className={`flex-1 px-4 py-2.5 border rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-white outline-none transition-all placeholder-gray-400 dark:placeholder-dark-500 ${
+                        errors.localPath
+                          ? 'border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900'
+                          : 'border-gray-300 dark:border-dark-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                      }`}
+                    />
+                    {isElectron() && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const path = await window.electronAPI?.openDirectory();
+                            if (path) {
+                              updateField('localPath', path);
+                            }
+                          } catch (err) {
+                            console.error('Failed to open directory dialog:', err);
+                          }
+                        }}
+                        className="px-4 py-2.5 border border-gray-300 dark:border-dark-600 text-gray-700 dark:text-dark-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors flex items-center gap-2 whitespace-nowrap"
+                        title="Browse for database folder"
+                      >
+                        <FolderOpenIcon />
+                        Browse
+                      </button>
+                    )}
+                  </div>
+                  {errors.localPath ? (
+                    <p className="text-xs text-red-500">{errors.localPath}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-dark-500">
+                      {isElectron() ? 'Select a local LanceDB database folder' : 'Absolute path to the LanceDB directory on the server'}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-4">
                   <FormField

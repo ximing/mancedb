@@ -63,8 +63,8 @@
         "类型检查通过"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented IPC channel 'dialog:openDirectory' in main process. Added Browse button to connection form that only shows in Electron. Uses dialog.showOpenDialog with properties: ['openDirectory'] to select folders."
     },
     {
       "id": "US-005",

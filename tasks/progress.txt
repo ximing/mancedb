@@ -17,7 +17,7 @@
 [x] US-001: 创建 Electron 基础项目结构
 [x] US-002: 集成 Web 应用到 Electron
 [x] US-003: 实现 Web 项目 Electron 适配改造
-[ ] US-004: 实现本地文件系统访问
+[x] US-004: 实现本地文件系统访问
 [ ] US-005: 实现原生 LanceDB 连接模式
 [ ] US-006: 实现连接模式切换 UI
 [ ] US-007: 添加系统集成特性
@@ -74,6 +74,22 @@
 - TypeScript 类型兼容：使用 `object | Record<string, unknown>` 来接受更灵活的参数类型
 - Electron 的 process 对象在 renderer 进程中需要类型声明
 - 所有 API 函数现在通过 apiClient.{get,post,put,delete,patch} 调用，保持与原有 axios API 相同的返回格式 {code, data, message}
+---
+
+## 2026-02-16 18:00 - US-004
+- 实现 IPC 通道 `dialog:openDirectory`：在 main 进程中添加文件夹选择对话框处理器
+- 更新 preload 脚本：`openDirectory` 方法已存在，通过 `invoke` 调用 main 进程
+- 修改 connection-form.tsx：为 Local Path 字段添加 Browse 按钮（仅在 Electron 环境显示）
+- 添加 FolderOpenIcon 图标组件用于 Browse 按钮
+- 更新帮助文本：Electron 环境下显示"Select a local LanceDB database folder"
+- 错误处理：通过 try-catch 处理对话框调用异常，用户取消时返回 null
+
+**Learnings for future iterations:**
+- Electron 的 dialog.showOpenDialog 需要在 main 进程中通过 ipcMain.handle 暴露
+- 使用 `properties: ['openDirectory']` 限制只能选择文件夹（不能选择文件）
+- 通过 BrowserWindow.getAllWindows()[0] 获取主窗口作为对话框的父窗口
+- 在 UI 中使用 `isElectron()` 检测环境，条件显示 Electron 特有功能
+- 对话框的权限错误（如无法访问文件夹）由 Electron 自动处理并显示系统错误对话框
 ---
 
 ## Notes
