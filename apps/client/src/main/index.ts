@@ -1,11 +1,16 @@
 import 'reflect-metadata';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { registerIPCHandlers } from './ipc-router';
 import { createApplicationMenu } from './menu';
 import { loadWindowState, saveWindowState } from './utils/window-state';
 import { initAutoUpdater, checkForUpdatesOnStartup } from './updater';
 import { initContainer } from './container';
+
+// Define __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow: BrowserWindow | null = null;
@@ -41,7 +46,7 @@ const createWindow = () => {
     minWidth: 1024,
     minHeight: 768,
     webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
+      preload: path.join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
       // Enable web security but allow local file access

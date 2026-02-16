@@ -13,6 +13,27 @@ import postcss from 'rollup-plugin-postcss';
  * @returns {Array} Rollup configuration
  */
 export function createRollupConfig({ input, packageDir, external = [] }) {
+  // Dependencies that should be bundled instead of external
+  const bundledDeps = ['tslib', 'reflect-metadata'];
+  
+  // Filter out bundled dependencies from external
+  const externalFilter = (id) => {
+    // Check if this is a bundled dependency by checking various path patterns
+    if (bundledDeps.some(dep => {
+      return id === dep || 
+             id.startsWith(dep + '/') ||
+             id.includes('/node_modules/' + dep) ||
+             id.includes('/node_modules/.pnpm/' + dep + '@');
+    })) {
+      return false;
+    }
+    if (external.some(ext => typeof ext === 'string' ? id === ext : ext.test(id))) {
+      return true;
+    }
+    // Mark other node_modules as external, but not if it's a bundled dep
+    return /node_modules/.test(id);
+  };
+
   return [
     {
       input,
@@ -30,10 +51,14 @@ export function createRollupConfig({ input, packageDir, external = [] }) {
           exports: 'named',
         },
       ],
-      external: [...external, /node_modules/],
+      external: externalFilter,
       plugins: [
-        nodeResolve(),
-        commonjs(),
+        nodeResolve({
+          preferBuiltins: false,
+        }),
+        commonjs({
+          transformMixedEsModules: true,
+        }),
         postcss({
           extract: true,
           minimize: true,
@@ -43,6 +68,7 @@ export function createRollupConfig({ input, packageDir, external = [] }) {
           tsconfig: `${packageDir}/tsconfig.json`,
           declaration: true,
           declarationDir: `${packageDir}/dist/types`,
+          importHelpers: true,
         }),
       ],
     },
