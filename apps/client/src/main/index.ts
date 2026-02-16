@@ -3,6 +3,7 @@ import path from 'node:path';
 import { registerIPCHandlers } from './ipc-router';
 import { createApplicationMenu } from './menu';
 import { loadWindowState, saveWindowState } from './utils/window-state';
+import { initAutoUpdater, checkForUpdatesOnStartup } from './updater';
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow: BrowserWindow | null = null;
@@ -108,6 +109,12 @@ app.whenReady().then(() => {
 
   // Create application menu
   createApplicationMenu();
+
+  // Initialize auto-updater
+  initAutoUpdater();
+
+  // Check for updates on startup
+  checkForUpdatesOnStartup();
 
   createWindow();
 

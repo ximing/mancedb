@@ -1,4 +1,5 @@
 import { app, Menu, type MenuItemConstructorOptions, BrowserWindow, shell } from 'electron';
+import { checkForUpdates } from './updater';
 
 const isMac = process.platform === 'darwin';
 
@@ -135,6 +136,13 @@ export function createApplicationMenu(): Menu {
     {
       role: 'help' as const,
       submenu: [
+        {
+          label: 'Check for Updates',
+          click: () => {
+            checkForUpdates();
+          },
+        },
+        { type: 'separator' },
         {
           label: 'Learn More',
           click: async () => {
