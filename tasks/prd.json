@@ -201,8 +201,8 @@
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Removed vectordb, added @lancedb/lancedb and lancedb-core dependencies, refactored lancedb.service.ts to use TypeDI with injected services, updated ipc-router.ts to use DI container, enabled decorators in tsconfig, added external deps to vite config, typecheck and build pass"
     },
     {
       "id": "US-013",

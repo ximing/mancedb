@@ -8,6 +8,69 @@ The Electron app is organized into three main processes:
 - **Preload** (`src/preload/`): Bridge between main and renderer, exposes safe APIs
 - **Renderer** (`src/renderer/`): Web environment, loads the web app
 
+## Dependency Injection (TypeDI)
+
+The client uses TypeDI for dependency injection, consistent with the server architecture.
+
+### Configuration
+
+- **tsconfig.main.json**: Must enable decorators:
+  ```json
+  {
+    "compilerOptions": {
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true
+    }
+  }
+  ```
+
+- **vite.config.ts**: Native modules and workspace packages must be external:
+  ```typescript
+  rollupOptions: {
+    external: [
+      'electron',
+      '@lancedb/lancedb',
+      '@mancedb/lancedb-core',
+      '@mancedb/dto',
+      'typedi',
+      'reflect-metadata'
+    ],
+  }
+  ```
+
+### Creating a Service
+
+```typescript
+import { Service, Inject } from 'typedi';
+import { ConnectionManager } from '@mancedb/lancedb-core';
+
+@Service()
+export class MyService {
+  constructor(
+    @Inject(() => ConnectionManager) private connectionManager: ConnectionManager
+  ) {}
+
+  async doSomething() {
+    const conn = await this.connectionManager.connect('/path/to/db');
+    // ...
+  }
+}
+```
+
+### Using Services
+
+Services are retrieved from the DI container:
+
+```typescript
+import { Container } from 'typedi';
+import { MyService } from './services/my.service';
+
+const myService = Container.get(MyService);
+await myService.doSomething();
+```
+
+The container is initialized in `container.ts` which dynamically imports all service files.
+
 ## IPC Communication Patterns
 
 ### Adding a New IPC Channel
@@ -55,6 +118,20 @@ if (endpoint === '/api/v1/database/tables' && method === 'GET') {
 
 Located at `src/main/services/lancedb.service.ts`.
 
+The service uses TypeDI for dependency injection and wraps the shared `@mancedb/lancedb-core` services:
+
+```typescript
+@Service()
+export class LanceDBService {
+  constructor(
+    @Inject(() => ConnectionManager) private connectionManager: ConnectionManager,
+    @Inject(() => TableManager) private tableManager: TableManager,
+    @Inject(() => QueryEngine) private queryEngine: QueryEngine,
+    @Inject(() => SchemaManager) private schemaManager: SchemaManager
+  ) {}
+}
+```
+
 ### Key Methods
 
 - `connectToDatabase(dbPath)` - Opens connection to a local LanceDB database
@@ -69,8 +146,17 @@ Located at `src/main/services/lancedb.service.ts`.
 
 - No ALTER TABLE support (can't add/drop columns)
 - No native RENAME TABLE (implemented via copy+delete)
-- Queries use `table.search(vector)` even for non-vector data
+- Queries use `table.query()` API for filtering and pagination
 - Schema is Apache Arrow-based
+
+### Shared Core Services
+
+The client now uses shared services from `@mancedb/lancedb-core`:
+
+- **ConnectionManager** - Manages LanceDB connections (local and S3)
+- **TableManager** - Table CRUD operations
+- **QueryEngine** - Query execution with filtering and pagination
+- **SchemaManager** - Arrow schema parsing
 
 ## Database Connection Flow
 

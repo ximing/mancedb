@@ -2,7 +2,38 @@
 - TypeDI Dependency Injection: Import 'reflect-metadata' at the top of main entry file before any other imports
 - TypeDI Service Registration: Use dynamic imports in initContainer() to trigger @Service() decorators
 - Electron Main Process DI: Initialize container in app.whenReady() before registering IPC handlers
+- Electron Native Modules: Add native dependencies like @lancedb/lancedb to rollup external in vite.config.ts
+- TypeScript Decorators: Enable experimentalDecorators and emitDecoratorMetadata in tsconfig for TypeDI
 
+---
+
+## 2026-02-16 18:30 - US-012
+- Removed vectordb dependency from apps/client
+- Added @lancedb/lancedb ^0.26.2, @mancedb/lancedb-core, and @mancedb/dto dependencies
+- Refactored apps/client/src/main/services/lancedb.service.ts:
+  - Converted from module-level functions to TypeDI @Service() class
+  - Injected ConnectionManager, TableManager, QueryEngine, SchemaManager via constructor
+  - Maintained same public API for backward compatibility with ipc-router.ts
+  - Updated all type imports to use @mancedb/dto
+- Updated apps/client/src/main/ipc-router.ts:
+  - Added getLanceDBService() helper that uses Container.get(LanceDBService)
+  - All IPC handlers now get service instance from DI container
+- Updated apps/client/src/main/container.ts:
+  - Added import '@mancedb/lancedb-core' to ensure core services are registered
+- Updated apps/client/tsconfig.main.json:
+  - Enabled experimentalDecorators and emitDecoratorMetadata for TypeDI
+- Updated apps/client/vite.config.ts:
+  - Added @lancedb/lancedb, @mancedb/lancedb-core, @mancedb/dto, typedi, reflect-metadata to external deps
+  - Prevents bundling of native modules and workspace packages
+- Fixed pre-existing type errors in apps/web/src/pages/startup/startup-mode.tsx and electron.d.ts
+- Typecheck passes, build passes, lint passes
+
+**Learnings for future iterations:**
+- Native Node.js modules (like LanceDB) must be added to rollupOptions.external in vite.config.ts
+- When using TypeDI with decorators, both experimentalDecorators and emitDecoratorMetadata must be enabled
+- Workspace packages should be external in Electron builds to avoid bundling issues
+- The DI container pattern allows easy service mocking for testing
+- Importing the entire lancedb-core module ensures all @Service() decorators are executed
 ---
 
 ## 2026-02-16 16:45 - US-011
