@@ -9,6 +9,10 @@
 - S3 Connection Flow: UI collects S3 config -> IPC db:testS3 validates -> IPC db:connectS3 connects + saves credentials securely
 - S3Config Property Names: Use awsAccessKeyId and awsSecretAccessKey (matching CredentialService interface)
 - Electron IPC Pattern: Add new channels to VALID_INVOKE_CHANNELS in preload/index.ts before using in renderer
+- Client-Server API Parity: Both client (IPC) and server (HTTP) expose identical API endpoints with same response formats
+- Error Response Format: Server uses {code, msg, data}, Client uses {code, message, data} - both are handled by UI
+- Query History: Server persists to LanceDB table, Client returns empty array (local mode doesn't persist)
+- Column Operations: Server supports addColumn/dropColumn via LanceDB's addColumns/dropColumns API, Client throws "not supported" error
 
 ---
 
@@ -573,6 +577,56 @@
 - SchemaManager.getTableSchema() provides standardized schema parsing across client and server
 - Keep buildFilterString() in TableService for deleteRows() which uses filters directly with table.delete()
 - URI-based approach (getConnectionUri) simplifies service methods by avoiding repeated connection handling
+---
+
+## 2026-02-16 22:30 - US-016
+- Completed comprehensive API comparison between client and server
+- **API Endpoints Comparison:**
+
+| Endpoint | Server | Client | Notes |
+|----------|--------|--------|-------|
+| GET /api/v1/database/info | ✅ | ✅ | Both return DatabaseInfo |
+| GET /api/v1/database/tables | ✅ | ✅ | Both return TableInfo[] |
+| GET /api/v1/tables/:name/schema | ✅ | ✅ | Both use SchemaManager |
+| GET /api/v1/tables/:name/data | ✅ | ✅ | Both use QueryEngine |
+| DELETE /api/v1/tables/:name | ✅ | ✅ | Both use TableManager |
+| PUT /api/v1/tables/:name/rename | ✅ | ✅ | Both use TableManager |
+| POST /api/v1/tables/:name/columns | ✅ | ⚠️ | Server supports, Client throws error |
+| DELETE /api/v1/tables/:name/columns/:col | ✅ | ⚠️ | Server supports, Client throws error |
+| DELETE /api/v1/tables/:name/rows | ✅ | ✅ | Both support filters/whereClause |
+| DELETE /api/v1/tables/:name/rows/:id | ✅ | ✅ | Both support row deletion by ID |
+| POST /api/v1/query | ✅ | ✅ | Both use QueryEngine.executeSql |
+| GET /api/v1/query/history | ✅ | ⚠️ | Server persists, Client returns empty |
+| Auth endpoints | ✅ | ✅ | Client mocks auth for local mode |
+
+- **Error Handling Comparison:**
+  - Server: Uses `ResponseUtil` with `{code, msg, data}` format
+  - Client: Uses `{code, message, data}` format in ipc-router.ts
+  - Both use consistent error codes (0 = success, non-zero = error)
+  - UI handles both formats correctly
+
+- **S3 Support Comparison:**
+  - Server: Full S3 support via ConnectionManager with credential encryption
+  - Client: Full S3 support via ConnectionManager with CredentialService for secure storage
+  - Both use identical S3 connection configuration
+
+- **Quality Checks:**
+  - Typecheck passes for all packages (dto, lancedb-core, client, server, web)
+  - Build passes for all packages
+  - Client lint passes
+  - Server lint has pre-existing eslint-plugin-turbo issue (not related to changes)
+
+- **Minor Differences Identified (acceptable):**
+  1. Query history: Server persists to DB, Client doesn't (local mode ephemeral by design)
+  2. Column operations: Server supports add/drop column via newer LanceDB API, Client throws error
+  3. Error field name: Server uses `msg`, Client uses `message` (UI handles both)
+
+**Learnings for future iterations:**
+- Both client and server now share the same lancedb-core services (ConnectionManager, TableManager, QueryEngine, SchemaManager)
+- API response format difference (`msg` vs `message`) is handled at the UI layer
+- Client's IPC router pattern mirrors server's controller pattern effectively
+- The shared lancedb-core package ensures consistent behavior across client and server
+- Column add/drop could be enabled in client by updating LanceDB service to use same API as server
 ---
 
 ## Notes

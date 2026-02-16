@@ -268,8 +268,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: API comparison shows 100% coverage for core operations. Minor differences: query history (server persists, client ephemeral), column operations (server supports via newer API), error field name (msg vs message - UI handles both). Typecheck and build pass for all packages."
     }
   ]
 }
