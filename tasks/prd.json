@@ -125,8 +125,8 @@
         "文档说明应用现在无需认证即可使用"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated ENVIRONMENT.md, .env.example, and README.md to remove JWT_SECRET requirement and document that authentication is disabled"
     }
   ]
 }

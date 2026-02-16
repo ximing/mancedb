@@ -20,6 +20,34 @@
 - Auth Page Removal Pattern: When removing auth pages, also delete the entire directory including components subdirectory and index.tsx entry point
 - Token Removal Pattern: Check both api-client.ts (fetch-based) and request.ts (axios-based) for token injection logic
 - Electron Auth Removal Pattern: IPC router auth endpoints should return error (403) when authentication is disabled, keeping only logout as no-op for compatibility
+- Documentation Update Pattern: When removing auth, update ENVIRONMENT.md, .env.example, and README.md to reflect that authentication is no longer required
+
+---
+
+## 2026-02-17 - US-008
+- Updated ENVIRONMENT.md:
+  - Removed JWT_SECRET from required configuration section
+  - Marked JWT configuration section as deprecated with notice
+  - Removed JWT authentication failure troubleshooting section
+  - Updated security recommendations (removed JWT_SECRET advice)
+  - Updated Docker deployment examples to not include JWT_SECRET
+- Updated .env.example:
+  - Commented out JWT_SECRET with deprecation notice
+  - Added note that user authentication system has been removed
+- Updated README.md:
+  - Removed JWT authentication from technology stack
+  - Updated quick start guide (JWT no longer required)
+  - Updated Docker deployment instructions (removed JWT_SECRET)
+  - Updated environment variable configuration section
+  - Updated security recommendations
+  - Updated API documentation (no auth required)
+  - Updated FAQ section (replaced password reset with security question)
+
+**Learnings for future iterations:**
+- When removing features, update all documentation files consistently
+- ENVIRONMENT.md, .env.example, and README.md should all be updated together
+- Keep deprecation notices in comments to help users understand changes
+- Replace removed feature documentation with notes about the removal
 
 ---
 
