@@ -421,5 +421,28 @@
 - The eslint-plugin-turbo has a pre-existing issue unrelated to these changes
 ---
 
+## 2026-02-17 11:00 - US-010
+- Updated apps/server/src/services/table.service.ts:
+  - Injected SchemaManager and QueryEngine via TypeDI @Inject decorator
+  - Refactored getTableSchema() to use SchemaManager.getTableSchema()
+  - Refactored getTableData() to use QueryEngine.queryTable()
+  - Added helper method getConnectionUri() to build URI from connection config
+  - Removed duplicate filter building logic (now handled by QueryEngine)
+  - Removed duplicate row processing logic (now handled by QueryEngine)
+- Updated apps/server/src/services/query.service.ts:
+  - Injected QueryEngine via TypeDI @Inject decorator
+  - Refactored executeQuery() to use QueryEngine.executeSql()
+  - Removed duplicate SQL parsing logic (now handled by QueryEngine)
+  - Removed duplicate connection management logic
+- Typecheck passes, build passes
+
+**Learnings for future iterations:**
+- QueryEngine.queryTable() handles pagination, filtering, and row processing automatically
+- QueryEngine.executeSql() parses SQL and executes queries using the same underlying logic
+- SchemaManager.getTableSchema() provides standardized schema parsing across client and server
+- Keep buildFilterString() in TableService for deleteRows() which uses filters directly with table.delete()
+- URI-based approach (getConnectionUri) simplifies service methods by avoiding repeated connection handling
+---
+
 ## Notes
 
