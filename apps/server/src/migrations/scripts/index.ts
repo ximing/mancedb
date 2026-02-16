@@ -4,7 +4,7 @@
  */
 
 import type { Migration } from '../types.js';
-import { usersTableMigration } from './001-init.js';
+import { tableMigrationsMigration } from './001-init.js';
 import { createIndexesMigration } from './002-create-indexes.js';
 import { connectionsTableMigration, queryHistoryTableMigration } from './003-admin-tables.js';
 
@@ -13,13 +13,13 @@ import { connectionsTableMigration, queryHistoryTableMigration } from './003-adm
  * Each migration is executed in order of version number
  *
  * Execution order:
- * 1. Version 1: Initialize all tables (001-init.ts)
+ * 1. Version 1: Initialize table_migrations metadata (001-init.ts)
  * 2. Version 2: Create indexes on all tables (002-create-indexes.ts)
  * 3. Future versions can add new fields, tables, or optimizations
  */
 export const ALL_MIGRATIONS: Migration[] = [
-  // Version 1: Initial schema - create all tables
-  usersTableMigration,
+  // Version 1: Initial schema - table_migrations metadata
+  tableMigrationsMigration,
 
   // Version 2: Create scalar indexes for query optimization
   createIndexesMigration,

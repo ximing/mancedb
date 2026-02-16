@@ -5,7 +5,6 @@
 
 import type { Connection } from '@lancedb/lancedb';
 import type { Migration } from '../types.js';
-import { usersSchema } from '../../models/db/schema.js';
 
 /**
  * Helper function to create a table if it doesn't exist
@@ -27,13 +26,16 @@ async function createTableIfNotExists(
 }
 
 /**
- * Migration for users table
+ * Migration for table_migrations metadata table
+ * Note: This is a placeholder migration. The table_migrations table
+ * is created automatically by the migration system if it doesn't exist.
  */
-export const usersTableMigration: Migration = {
+export const tableMigrationsMigration: Migration = {
   version: 1,
-  tableName: 'users',
-  description: 'Initialize users table with user account information',
-  up: async (connection: Connection) => {
-    await createTableIfNotExists(connection, 'users', usersSchema);
+  tableName: 'table_migrations',
+  description: 'Initialize table_migrations metadata table',
+  up: async (_connection: Connection) => {
+    // table_migrations is created automatically by the migration system
+    console.log('table_migrations table is managed automatically');
   },
 };

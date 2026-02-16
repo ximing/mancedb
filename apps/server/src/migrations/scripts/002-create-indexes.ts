@@ -46,16 +46,6 @@ async function createIndexesForTable(connection: Connection, tableName: string):
   const table = await connection.openTable(tableName);
 
   switch (tableName) {
-    case 'users':
-      // uid: BTREE for exact match queries
-      // email, phone: BTREE for login and lookup queries
-      // status: BITMAP for low-cardinality filtering
-      await createIndexIfNotExists(table, 'uid', 'BTREE', 'users');
-      await createIndexIfNotExists(table, 'email', 'BTREE', 'users');
-      await createIndexIfNotExists(table, 'phone', 'BTREE', 'users');
-      await createIndexIfNotExists(table, 'status', 'BITMAP', 'users');
-      break;
-
     case 'table_migrations':
       // tableName: BTREE for version lookup
       await createIndexIfNotExists(table, 'tableName', 'BTREE', 'table_migrations');
@@ -75,7 +65,7 @@ export const createIndexesMigration: Migration = {
       console.log('Starting index creation migration...');
 
       // List of all tables that need indexes
-      const tablesToIndex = ['users', 'table_migrations'];
+      const tablesToIndex = ['table_migrations'];
 
       // Get existing tables
       const existingTables = await connection.tableNames();

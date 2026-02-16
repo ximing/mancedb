@@ -3,10 +3,6 @@ import type { Connection, Table } from '@lancedb/lancedb';
 import { ConnectionManager } from '@mancedb/lancedb-core';
 import { config } from '../config/config.js';
 import { MigrationManager } from '../migrations/index.js';
-import { type UserRecord } from '../models/db/schema.js';
-
-// Re-export for backward compatibility
-export type { UserRecord };
 
 @Service()
 export class LanceDbService {
@@ -178,7 +174,7 @@ export class LanceDbService {
    * @param cleanupOlderThanDays - Optional: Clean up versions older than N days (default: uses config.lancedb.versionRetentionDays)
    */
   async optimizeAllTables(cleanupOlderThanDays?: number): Promise<void> {
-    const tables = ['users', 'table_migrations'];
+    const tables = ['table_migrations'];
     console.log(`Starting optimization for all tables...`);
 
     for (const tableName of tables) {
