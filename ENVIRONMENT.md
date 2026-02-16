@@ -4,13 +4,14 @@
 
 ## 快速配置
 
-对于大部分用户，只需要配置以下必需的环境变量：
+对于大部分用户，只需要配置以下环境变量：
 
 ```env
-# 必需配置
-JWT_SECRET=your-super-secret-key-at-least-32-characters-long
+# 基础配置
 CORS_ORIGIN=http://localhost:3000
 ```
+
+> **注意**：从最新版本开始，应用已移除用户认证系统，打开应用后可直接使用，无需登录。
 
 ## 完整配置选项
 
@@ -28,16 +29,13 @@ CORS_ORIGIN=http://localhost:3000
 | `CORS_ORIGIN` | `http://localhost:3000` | 允许的跨域源，多个源用逗号分隔 |
 | `CORS_CREDENTIALS` | `true` | 是否允许携带凭证（cookies） |
 
-### JWT 认证配置
+### JWT 认证配置（已弃用）
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `JWT_SECRET` | *(必需)* | JWT 签名密钥，**生产环境必须修改**，至少 32 个字符 |
+| `JWT_SECRET` | - | **已弃用**，用户认证系统已移除，此变量不再需要 |
 
-**安全提示：**
-- 使用随机生成的强密钥：`openssl rand -base64 32`
-- 定期轮换密钥（会强制所有用户重新登录）
-- 不要将密钥提交到代码仓库
+> **重要**：用户认证系统已完全移除，应用现在无需登录即可使用。`JWT_SECRET` 环境变量不再需要。
 
 ### LanceDB 配置
 
@@ -74,8 +72,7 @@ CORS_ORIGIN=http://localhost:3000
 创建 `.env` 文件：
 
 ```env
-# 必需配置
-JWT_SECRET=$(openssl rand -base64 32)
+# 基础配置
 CORS_ORIGIN=http://localhost:3000
 
 # 可选配置
@@ -95,7 +92,6 @@ docker-compose up -d
 docker run -d \
   -p 3000:3000 \
   --name lancedb-admin \
-  -e JWT_SECRET=$(openssl rand -base64 32) \
   -e CORS_ORIGIN=http://localhost:3000 \
   -e LOCALE_LANGUAGE=zh-cn \
   -v $(pwd)/data/lancedb:/app/lancedb_data \
@@ -153,12 +149,6 @@ docker logs mancedb-app
 - 卷挂载权限问题：`chmod 755 /host/path/lancedb`
 - 磁盘空间不足：检查宿主机磁盘空间
 
-### JWT 认证失败
-
-- 确认 `JWT_SECRET` 已正确设置
-- 确认密钥长度至少 32 个字符
-- 修改密钥后需要重新登录
-
 ### CORS 错误
 
 - 确认 `CORS_ORIGIN` 包含实际访问的域名
@@ -167,11 +157,15 @@ docker logs mancedb-app
 
 ## 安全建议
 
-1. **JWT_SECRET**：使用强随机密钥，定期轮换
-2. **CORS_ORIGIN**：明确指定允许的域名，不要使用 `*`
-3. **数据备份**：定期备份挂载的 lancedb_data 目录
-4. **HTTPS**：生产环境使用 HTTPS 反向代理
-5. **访问控制**：使用防火墙限制端口访问
+1. **CORS_ORIGIN**：明确指定允许的域名，不要使用 `*`
+2. **数据备份**：定期备份挂载的 lancedb_data 目录
+3. **HTTPS**：生产环境使用 HTTPS 反向代理
+4. **访问控制**：使用防火墙限制端口访问
+
+> **注意**：用户认证系统已移除，建议通过以下方式保护应用：
+> - 使用 HTTPS 反向代理
+> - 配置防火墙限制访问 IP
+> - 在私有网络或 VPN 内部署
 
 ## 升级指南
 

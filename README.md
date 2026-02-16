@@ -85,7 +85,6 @@
 
 - 🏗️ **Node.js 20** + **Express** - 服务端框架
 - 🗄️ **LanceDB** - 向量数据库
-- 🔐 **JWT 认证** - 安全的令牌认证机制
 - 📝 **TypeScript** - 类型安全
 - 🧩 **routing-controllers** - 装饰器路由
 - 💉 **TypeDI** - 依赖注入
@@ -122,19 +121,20 @@ cd mancedb
 pnpm install
 ```
 
-#### 3️⃣ 配置环境变量
+#### 3️⃣ 配置环境变量（可选）
 
 ```bash
 cp .env.example .env
-# 编辑 .env 文件，设置 JWT_SECRET
+# 编辑 .env 文件（如需自定义配置）
 ```
 
-**必需的环境变量：**
+**基础环境变量：**
 
 ```env
-JWT_SECRET=your-super-secret-key-at-least-32-characters-long
 CORS_ORIGIN=http://localhost:3000
 ```
+
+> **注意**：从最新版本开始，应用已移除用户认证系统，无需配置 `JWT_SECRET`，打开应用后可直接使用。
 
 #### 4️⃣ 启动开发服务器
 
@@ -185,9 +185,9 @@ docker pull ghcr.io/ximing/mancedb:stable
 git clone https://github.com/your-org/mancedb.git
 cd mancedb
 
-# 2. 配置环境变量
+# 2. 配置环境变量（可选）
 cp .env.example .env
-# 编辑 .env，设置 JWT_SECRET
+# 编辑 .env 文件（如需自定义配置）
 
 # 3. 启动服务
 docker-compose up -d
@@ -202,14 +202,10 @@ docker-compose down
 #### 方式 2: Docker Run
 
 ```bash
-# 生成随机密钥
-JWT_SECRET=$(openssl rand -base64 32)
-
 # 运行容器
 docker run -d \
   -p 3000:3000 \
   --name lancedb-admin \
-  -e JWT_SECRET=$JWT_SECRET \
   -e CORS_ORIGIN=http://localhost:3000 \
   -v $(pwd)/data/lancedb:/app/lancedb_data \
   --restart unless-stopped \
@@ -237,12 +233,13 @@ docker run -d \
 
 详见 [ENVIRONMENT.md](./ENVIRONMENT.md) 文档。
 
-**必需配置：**
+**基础配置：**
 
 ```env
-JWT_SECRET=your-super-secret-key-at-least-32-characters-long
 CORS_ORIGIN=http://localhost:3000
 ```
+
+> **注意**：用户认证系统已移除，无需配置 `JWT_SECRET`。
 
 **可选配置：**
 
@@ -291,23 +288,18 @@ curl http://localhost:3000/api/v1/health
 
 ### 安全建议
 
-1. **JWT_SECRET**：使用强随机密钥
-   ```bash
-   openssl rand -base64 32
-   ```
-2. **CORS_ORIGIN**：明确指定允许的域名
-3. **数据备份**：定期备份 `lancedb_data` 目录
-4. **HTTPS**：生产环境使用 HTTPS 反向代理
+1. **CORS_ORIGIN**：明确指定允许的域名
+2. **数据备份**：定期备份 `lancedb_data` 目录
+3. **HTTPS**：生产环境使用 HTTPS 反向代理
+4. **访问控制**：建议通过防火墙或 VPN 限制访问
+
+> **注意**：用户认证系统已移除，建议通过 HTTPS 和访问控制保护应用安全。
 
 ## API 文档
 
 ### 认证
 
-所有 API（除登录外）需要 JWT Token：
-
-```http
-Authorization: Bearer <token>
-```
+> **注意**：用户认证系统已移除，所有 API 无需认证即可访问。
 
 ### 主要端点
 
@@ -327,9 +319,12 @@ Authorization: Bearer <token>
 
 ## 常见问题
 
-### Q: 如何重置管理员密码？
+### Q: 如何保护应用安全？
 
-A: 目前需要删除连接重新创建。未来版本将支持密码重置功能。
+A: 由于用户认证系统已移除，建议通过以下方式保护应用：
+   - 使用 HTTPS 反向代理
+   - 配置防火墙限制访问 IP
+   - 在私有网络或 VPN 内部署
 
 ### Q: 支持哪些 SQL 语法？
 
