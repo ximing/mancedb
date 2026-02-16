@@ -1,9 +1,11 @@
+import 'reflect-metadata';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import path from 'node:path';
 import { registerIPCHandlers } from './ipc-router';
 import { createApplicationMenu } from './menu';
 import { loadWindowState, saveWindowState } from './utils/window-state';
 import { initAutoUpdater, checkForUpdatesOnStartup } from './updater';
+import { initContainer } from './container';
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow: BrowserWindow | null = null;
@@ -103,7 +105,10 @@ const createWindow = () => {
   }
 };
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Initialize DI container before registering IPC handlers
+  await initContainer();
+
   // Register IPC handlers for LanceDB API
   registerIPCHandlers();
 

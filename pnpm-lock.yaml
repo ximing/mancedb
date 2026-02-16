@@ -53,6 +53,12 @@ importers:
       electron-updater:
         specifier: ^6.7.3
         version: 6.7.3
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      typedi:
+        specifier: ^0.10.0
+        version: 0.10.0
       vectordb:
         specifier: ^0.21.2
         version: 0.21.2(@apache-arrow/ts@14.0.2)(apache-arrow@18.1.0)
