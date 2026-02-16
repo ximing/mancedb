@@ -13,8 +13,6 @@ export class AuthService extends Service {
 
   constructor() {
     super();
-    // Clean up any leftover token from localStorage
-    localStorage.removeItem('token');
   }
 
   /**

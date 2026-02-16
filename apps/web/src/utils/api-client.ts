@@ -105,15 +105,6 @@ async function httpRequest<T>(options: APIRequestOptions): Promise<APIResponse<T
     },
   };
 
-  // Add authorization token if available
-  const token = localStorage.getItem('mancedb_token');
-  if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    };
-  }
-
   // Add request body for non-GET requests
   if (options.data && options.method !== 'GET') {
     config.data = JSON.stringify(options.data);
@@ -129,15 +120,6 @@ async function httpRequest<T>(options: APIRequestOptions): Promise<APIResponse<T
 
     // Handle HTTP errors
     if (!response.ok) {
-      if (response.status === 401) {
-        // Unauthorized - clear auth data and redirect
-        localStorage.removeItem('mancedb_token');
-        localStorage.removeItem('mancedb_user');
-        if (!window.location.pathname.includes('/auth')) {
-          window.location.href = '/auth';
-        }
-      }
-
       const errorData = await response.json().catch(() => ({
         code: response.status,
         message: response.statusText,

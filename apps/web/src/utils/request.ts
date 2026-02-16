@@ -17,16 +17,10 @@ const request: AxiosInstance = axios.create({
 
 /**
  * Request interceptor
- * Add token to headers if available and serialize Date objects to timestamps
+ * Serialize Date objects in query parameters to timestamps
  */
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('mancedb_token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     // Serialize Date objects in query parameters to timestamps
     if (config.params) {
       Object.keys(config.params).forEach((key) => {
@@ -59,17 +53,6 @@ request.interceptors.response.use(
       const { status, data } = error.response;
 
       switch (status) {
-        case 401:
-          // Unauthorized - clear auth data and redirect to login
-          localStorage.removeItem('mancedb_token');
-          localStorage.removeItem('mancedb_user');
-
-          // Only redirect if not already on auth page
-          if (!window.location.pathname.includes('/auth')) {
-            window.location.href = '/auth';
-          }
-          break;
-
         case 403:
           console.error('Forbidden:', data?.message || 'Access denied');
           break;
