@@ -29,8 +29,9 @@ export interface Config {
     origin: string[];
     credentials: boolean;
   };
+  /** @deprecated JWT is no longer required - authentication has been removed */
   jwt: {
-    secret: string;
+    secret?: string;
   };
   lancedb: {
     storageType: StorageType;
@@ -59,7 +60,7 @@ export const config: Config = {
     credentials: process.env.CORS_CREDENTIALS === 'true',
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+    secret: process.env.JWT_SECRET,
   },
   lancedb: {
     storageType: (process.env.LANCEDB_STORAGE_TYPE || 'local') as StorageType,

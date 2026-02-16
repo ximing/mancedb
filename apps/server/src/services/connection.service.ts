@@ -55,7 +55,8 @@ export class ConnectionService {
 
   constructor(private lanceDb: LanceDbService) {
     // Derive a 32-byte key from the JWT secret for AES encryption
-    const secret = config.jwt.secret;
+    // Use a fallback key if JWT_SECRET is not set (authentication is deprecated)
+    const secret = config.jwt.secret || 'deprecated-fallback-secret-for-encryption';
     this.ENCRYPTION_KEY = scryptSync(secret, 'salt', 32);
   }
 

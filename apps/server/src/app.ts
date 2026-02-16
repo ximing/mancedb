@@ -10,7 +10,6 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { errorHandler } from './middlewares/error-handler.js';
 import { controllers } from './controllers/index.js';
-import { authHandler } from './middlewares/auth-handler.js';
 import { initIOC } from './ioc.js';
 import { LanceDbService } from './sources/lancedb.js';
 import { config } from './config/config.js';
@@ -49,7 +48,6 @@ export async function createApp() {
   app.use(morgan('dev'));
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
-  app.use(authHandler);
 
   // Serve static files from public directory (web build artifacts)
   const publicPath = join(__dirname, '../public');
@@ -71,12 +69,6 @@ export async function createApp() {
     controllers,
     validation: true,
     defaultErrorHandler: false,
-    currentUserChecker: async (action: Action) => {
-      if (action.request.user) {
-        return action.request.user;
-      }
-      return null;
-    },
   });
 
   // 错误处理中间件

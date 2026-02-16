@@ -16,12 +16,16 @@ export interface ConnectionAuthResult {
   error?: string;
 }
 
+/** @deprecated Authentication is being removed - fallback secret for type compatibility */
+const JWT_SECRET = config.jwt.secret || 'deprecated-fallback-secret';
+
 @Service()
 export class ConnectionAuthService {
   constructor(private connectionService: ConnectionService) {}
 
   /**
    * Authenticate a user against a connection's credentials
+   * @deprecated Authentication is being removed
    */
   async authenticate(connectionId: string, username: string, password: string): Promise<ConnectionAuthResult> {
     try {
@@ -61,7 +65,7 @@ export class ConnectionAuthService {
         type: connection.type,
       };
 
-      const token = jwt.sign(payload, config.jwt.secret, { expiresIn: `${expiresIn}s` });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: `${expiresIn}s` });
 
       return {
         success: true,
@@ -79,11 +83,12 @@ export class ConnectionAuthService {
 
   /**
    * Refresh an existing JWT token
+   * @deprecated Authentication is being removed
    */
   async refreshToken(token: string): Promise<ConnectionAuthResult> {
     try {
       // Verify the existing token
-      const decoded = jwt.verify(token, config.jwt.secret) as ConnectionAuthPayload;
+      const decoded = jwt.verify(token, JWT_SECRET) as ConnectionAuthPayload;
 
       // Check if connection still exists
       const connection = await this.connectionService.getConnectionWithSecrets(decoded.connectionId);
@@ -101,7 +106,7 @@ export class ConnectionAuthService {
         type: connection.type,
       };
 
-      const newToken = jwt.sign(payload, config.jwt.secret, { expiresIn: `${expiresIn}s` });
+      const newToken = jwt.sign(payload, JWT_SECRET, { expiresIn: `${expiresIn}s` });
 
       return {
         success: true,
@@ -122,10 +127,11 @@ export class ConnectionAuthService {
 
   /**
    * Verify a JWT token and return the payload
+   * @deprecated Authentication is being removed
    */
   verifyToken(token: string): ConnectionAuthPayload | null {
     try {
-      return jwt.verify(token, config.jwt.secret) as ConnectionAuthPayload;
+      return jwt.verify(token, JWT_SECRET) as ConnectionAuthPayload;
     } catch {
       return null;
     }

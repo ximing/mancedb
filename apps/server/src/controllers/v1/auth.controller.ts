@@ -78,12 +78,13 @@ export class AuthV1Controller {
         return ResponseUtil.error(ErrorCode.PASSWORD_ERROR);
       }
 
-      // Generate JWT token
+      // Generate JWT token (auth deprecated - using fallback secret)
+      const jwtSecret = config.jwt.secret || 'deprecated-fallback-secret';
       const token = jwt.sign(
         {
           uid: user.uid,
         },
-        config.jwt.secret,
+        jwtSecret,
         { expiresIn: '90d' }
       );
 
