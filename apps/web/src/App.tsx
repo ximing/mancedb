@@ -1,5 +1,6 @@
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router';
 import AuthPage from './pages/auth';
+import StartupModePage from './pages/startup';
 import { ConnectionListPage } from './pages/connections/connection-list';
 import { ConnectionFormPage } from './pages/connections/connection-form';
 import { ConnectionLoginPage } from './pages/connection-login/connection-login';
@@ -17,6 +18,8 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Startup mode selection (Electron only) */}
+        <Route path="/startup" element={<StartupModePage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route
           path="/"

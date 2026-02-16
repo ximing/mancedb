@@ -94,8 +94,8 @@
         "验证界面和交互正常"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created StartupModePage component with mode selection cards. Remote mode connects to server URL and navigates to /auth. Local mode opens folder dialog and connects directly to database. Settings persisted to localStorage with 'mancedb_' prefix keys."
     },
     {
       "id": "US-007",

@@ -6,6 +6,8 @@
 - LanceDB Node.js SDK (vectordb) 使用 `connect()` 连接数据库，`table.search([])` 查询数据
 - IPC Router 模式：main 进程注册 `api:request` handler，将 HTTP-like 请求路由到本地服务方法
 - LanceDB 限制：不支持添加/删除列、不支持表重命名（需复制数据实现）
+- 本地存储使用 localStorage，键名格式：`mancedb_{feature}_{key}`
+- Electron 环境检测使用 `isElectron()` 工具函数，基于 process.versions.electron 和 window.electronAPI
 
 ---
 
@@ -22,7 +24,7 @@
 [x] US-003: 实现 Web 项目 Electron 适配改造
 [x] US-004: 实现本地文件系统访问
 [x] US-005: 实现原生 LanceDB 连接模式
-[ ] US-006: 实现连接模式切换 UI
+[x] US-006: 实现连接模式切换 UI
 [ ] US-007: 添加系统集成特性
 [ ] US-008: 实现自动更新检查
 [ ] US-009: 配置跨平台打包
@@ -120,6 +122,28 @@
 - LanceDB 限制：不支持 ALTER TABLE（添加/删除列），不支持 RENAME TABLE
 - IPC Router 模式让 web app 代码无需修改即可在 Electron 本地模式运行
 - 使用 `void variable` 模式避免未使用参数警告（替代 underscore prefix）
+---
+
+## 2026-02-16 22:00 - US-006
+- 创建启动模式选择页面：apps/web/src/pages/startup/startup-mode.tsx
+  - 两种模式选择卡片：远程服务器连接 / 本地数据库打开
+  - 远程模式：输入服务器 URL，测试连接后跳转到登录页
+  - 本地模式：选择文件夹路径，直接连接后跳转到数据库浏览器
+- 更新 App.tsx：添加 `/startup` 路由
+- 更新 auth.tsx：Electron 环境下未选择模式时重定向到启动页
+- 更新 electron.d.ts：添加 `invoke` 方法类型定义
+- 持久化：使用 localStorage 保存选择的模式和配置
+  - `mancedb_startup_mode`: 'remote' | 'local'
+  - `mancedb_server_url`: 远程服务器地址
+  - `mancedb_local_path`: 本地数据库路径
+- 类型检查通过，lint 通过
+
+**Learnings for future iterations:**
+- 启动页设计模式：检测无配置 -> 显示启动页 -> 选择模式 -> 保存配置 -> 跳转到对应流程
+- 远程模式需要认证（跳转到 /auth），本地模式免认证（直接跳转数据库浏览器）
+- 使用 `setAPIMode()` 动态切换 HTTP/IPC 模式
+- IPC `db:test` 和 `db:connect` 通道已在 US-005 实现，本故事直接复用
+- 本地存储键名统一使用 `mancedb_` 前缀避免冲突
 ---
 
 ## Notes

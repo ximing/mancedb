@@ -4,11 +4,26 @@ import { view, useService } from '@rabjs/react';
 import { AuthService } from '../../services/auth.service';
 import { LoginForm } from './components/login-form';
 import { RegisterForm } from './components/register-form';
+import { isElectron } from '../../utils/environment';
+
+// Storage key for startup mode
+const STORAGE_KEY_MODE = 'mancedb_startup_mode';
 
 export const AuthPage = view(() => {
   const [isLogin, setIsLogin] = useState(true);
   const authService = useService(AuthService);
   const navigate = useNavigate();
+
+  // Redirect to startup mode if in Electron and no mode selected
+  useEffect(() => {
+    if (isElectron()) {
+      const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
+      if (!savedMode) {
+        navigate('/startup', { replace: true });
+        return;
+      }
+    }
+  }, [navigate]);
 
   // Redirect to home if already authenticated
   useEffect(() => {
