@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import path from 'node:path';
+import { registerIPCHandlers } from './ipc-router';
 
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
@@ -38,6 +39,9 @@ const createWindow = () => {
 };
 
 app.whenReady().then(() => {
+  // Register IPC handlers for LanceDB API
+  registerIPCHandlers();
+
   createWindow();
 
   app.on('activate', () => {

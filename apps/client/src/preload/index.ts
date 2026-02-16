@@ -4,7 +4,7 @@ import type { ElectronAPI } from '../types/electron';
 // Valid channels for send/receive
 const VALID_SEND_CHANNELS = ['app:quit', 'window:minimize', 'window:maximize'];
 const VALID_RECEIVE_CHANNELS = ['app:update-available'];
-const VALID_INVOKE_CHANNELS = ['dialog:openDirectory', 'api:request'];
+const VALID_INVOKE_CHANNELS = ['dialog:openDirectory', 'api:request', 'db:connect', 'db:disconnect', 'db:test'];
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object

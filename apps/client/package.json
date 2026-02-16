@@ -16,8 +16,8 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@mancedb/typescript-config": "workspace:*",
     "@eslint/js": "^9.23.0",
+    "@mancedb/typescript-config": "workspace:*",
     "@types/node": "^22.13.14",
     "electron": "^35.0.3",
     "electron-builder": "^26.0.12",
@@ -28,5 +28,8 @@
     "vite": "^6.2.3",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6"
+  },
+  "dependencies": {
+    "vectordb": "^0.21.2"
   }
 }
