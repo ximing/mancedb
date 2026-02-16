@@ -1,25 +1,16 @@
-import { Service } from 'typedi';
-import * as lancedb from '@lancedb/lancedb';
+import { Service, Inject } from 'typedi';
 import type { Connection } from '@lancedb/lancedb';
+import { ConnectionManager, TableManager } from '@mancedb/lancedb-core';
+import type { TableInfo, DatabaseInfo } from '@mancedb/dto';
 import { ConnectionService } from './connection.service.js';
-
-export interface TableInfo {
-  name: string;
-  rowCount: number;
-  sizeBytes: number;
-}
-
-export interface DatabaseInfo {
-  name: string;
-  type: 'local' | 's3';
-  path: string;
-  tableCount: number;
-  tables: TableInfo[];
-}
 
 @Service()
 export class DatabaseService {
-  constructor(private connectionService: ConnectionService) {}
+  constructor(
+    private connectionService: ConnectionService,
+    @Inject(() => ConnectionManager) private connectionManager: ConnectionManager,
+    @Inject(() => TableManager) private tableManager: TableManager
+  ) {}
 
   /**
    * Connect to a LanceDB database using connection configuration
@@ -34,7 +25,7 @@ export class DatabaseService {
       if (!connection.localPath) {
         throw new Error('Local path is not configured');
       }
-      return await lancedb.connect(connection.localPath);
+      return await this.connectionManager.connect(connection.localPath);
     } else if (connection.type === 's3') {
       if (!connection.s3Bucket || !connection.s3Region) {
         throw new Error('S3 configuration is incomplete');
@@ -52,20 +43,17 @@ export class DatabaseService {
         throw new Error('S3 credentials are not configured');
       }
 
-      const storageOptions: Record<string, string> = {
-        virtualHostedStyleRequest: 'true',
-        conditionalPut: 'disabled',
-        awsAccessKeyId: accessKey,
-        awsSecretAccessKey: secretKey,
-        awsRegion: connection.s3Region,
-      };
-
-      if (connection.s3Endpoint) {
-        storageOptions.awsEndpoint = connection.s3Endpoint;
-      }
-
       const path = `s3://${connection.s3Bucket}/lancedb`;
-      return await lancedb.connect(path, { storageOptions });
+      return await this.connectionManager.connect(path, {
+        storageType: 's3',
+        s3Config: {
+          bucket: connection.s3Bucket,
+          region: connection.s3Region,
+          awsAccessKeyId: accessKey,
+          awsSecretAccessKey: secretKey,
+          endpoint: connection.s3Endpoint || undefined,
+        },
+      });
     }
 
     throw new Error('Unknown connection type');
@@ -75,39 +63,13 @@ export class DatabaseService {
    * Get all tables in the database
    */
   async getTables(connectionId: string): Promise<TableInfo[]> {
-    const db = await this.connectToDatabase(connectionId);
-    try {
-      const tableNames = await db.tableNames();
-      const tables: TableInfo[] = [];
-
-      for (const name of tableNames) {
-        try {
-          const table = await db.openTable(name);
-          const rowCount = await table.countRows();
-
-          // Get table size by querying stats (approximate)
-          // LanceDB doesn't have a direct size API, so we estimate based on row count
-          tables.push({
-            name,
-            rowCount,
-            sizeBytes: 0, // Will be populated if we can get more info
-          });
-
-          table.close();
-        } catch (error) {
-          console.warn(`Failed to get info for table ${name}:`, error);
-          tables.push({
-            name,
-            rowCount: 0,
-            sizeBytes: 0,
-          });
-        }
-      }
-
-      return tables;
-    } finally {
-      db.close();
+    const connection = await this.connectionService.getConnectionWithSecrets(connectionId);
+    if (!connection) {
+      throw new Error('Connection not found');
     }
+
+    const uri = this.getConnectionUri(connection);
+    return await this.tableManager.getTables(uri);
   }
 
   /**
@@ -119,42 +81,36 @@ export class DatabaseService {
       return null;
     }
 
-    const db = await this.connectToDatabase(connectionId);
-    try {
-      const tableNames = await db.tableNames();
-      const tables: TableInfo[] = [];
+    const uri = this.getConnectionUri(connection);
+    const tables = await this.tableManager.getTables(uri);
 
-      for (const name of tableNames) {
-        try {
-          const table = await db.openTable(name);
-          const rowCount = await table.countRows();
+    return {
+      name: connection.name,
+      type: connection.type,
+      path: connection.type === 'local' ? connection.localPath || '' : `s3://${connection.s3Bucket}`,
+      tableCount: tables.length,
+      tables,
+    };
+  }
 
-          tables.push({
-            name,
-            rowCount,
-            sizeBytes: 0,
-          });
-
-          table.close();
-        } catch (error) {
-          console.warn(`Failed to get info for table ${name}:`, error);
-          tables.push({
-            name,
-            rowCount: 0,
-            sizeBytes: 0,
-          });
-        }
+  /**
+   * Helper to get connection URI from connection config
+   */
+  private getConnectionUri(connection: {
+    type: 'local' | 's3';
+    localPath?: string | null;
+    s3Bucket?: string | null;
+  }): string {
+    if (connection.type === 'local') {
+      if (!connection.localPath) {
+        throw new Error('Local path is not configured');
       }
-
-      return {
-        name: connection.name,
-        type: connection.type,
-        path: connection.type === 'local' ? connection.localPath || '' : `s3://${connection.s3Bucket}`,
-        tableCount: tables.length,
-        tables,
-      };
-    } finally {
-      db.close();
+      return connection.localPath;
+    } else {
+      if (!connection.s3Bucket) {
+        throw new Error('S3 bucket is not configured');
+      }
+      return `s3://${connection.s3Bucket}/lancedb`;
     }
   }
 

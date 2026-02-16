@@ -1,6 +1,6 @@
-import { Service } from 'typedi';
-import * as lancedb from '@lancedb/lancedb';
+import { Service, Inject } from 'typedi';
 import type { Connection, Table } from '@lancedb/lancedb';
+import { ConnectionManager } from '@mancedb/lancedb-core';
 import { config } from '../config/config.js';
 import { MigrationManager } from '../migrations/index.js';
 import { type UserRecord } from '../models/db/schema.js';
@@ -13,6 +13,10 @@ export class LanceDbService {
   private db!: Connection;
   private initialized = false;
   private tableCache: Map<string, Table> = new Map();
+
+  constructor(
+    @Inject(() => ConnectionManager) private connectionManager: ConnectionManager
+  ) {}
 
   async init() {
     try {
@@ -32,29 +36,6 @@ export class LanceDbService {
           throw new Error('S3 bucket name is required');
         }
 
-        // Build storage options for S3
-        const storageOptions: Record<string, string> = {
-          virtualHostedStyleRequest: 'true', // 启用 virtual hosted style
-          conditionalPut: 'disabled', // 关键！
-        };
-
-        if (s3Config.awsAccessKeyId) {
-          storageOptions.awsAccessKeyId = s3Config.awsAccessKeyId;
-        }
-
-        if (s3Config.awsSecretAccessKey) {
-          storageOptions.awsSecretAccessKey = s3Config.awsSecretAccessKey;
-        }
-
-        if (s3Config.region) {
-          storageOptions.awsRegion = s3Config.region;
-        }
-
-        if (s3Config.endpoint) {
-          //   storageOptions.endpoint = s3Config.endpoint;
-          storageOptions.awsEndpoint = `https://${s3Config.bucket}.oss-${s3Config.region}.aliyuncs.com`;
-        }
-
         const logMessage = [
           `Connecting to S3 bucket: ${s3Config.bucket}`,
           `prefix: ${s3Config.prefix}`,
@@ -65,13 +46,23 @@ export class LanceDbService {
 
         console.log(logMessage);
 
-        this.db = await lancedb.connect(path, {
-          storageOptions,
+        // Use ConnectionManager for S3 connection
+        this.db = await this.connectionManager.connect(path, {
+          storageType: 's3',
+          s3Config: {
+            bucket: s3Config.bucket,
+            region: s3Config.region,
+            awsAccessKeyId: s3Config.awsAccessKeyId,
+            awsSecretAccessKey: s3Config.awsSecretAccessKey,
+            endpoint: s3Config.endpoint ? `https://${s3Config.bucket}.oss-${s3Config.region}.aliyuncs.com` : undefined,
+            prefix: s3Config.prefix,
+          },
         });
       } else {
         // Local Storage (default)
         console.log(`Connecting to local database at: ${path}`);
-        this.db = await lancedb.connect(path);
+        // Use ConnectionManager for local connection
+        this.db = await this.connectionManager.connect(path);
       }
 
       // Mark as initialized after connection is established (needed for table operations during init)
@@ -230,7 +221,8 @@ export class LanceDbService {
   async close(): Promise<void> {
     try {
       await this.closeAllTables();
-      this.db.close();
+      // Use ConnectionManager to disconnect all connections
+      await this.connectionManager.disconnectAll();
       this.initialized = false;
       console.log('LanceDB connection closed');
     } catch (error) {
