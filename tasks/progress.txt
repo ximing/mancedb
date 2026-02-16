@@ -398,5 +398,28 @@
 - 确保每个子模块都有 index.ts 文件统一导出，方便主入口批量导出
 ---
 
+## 2026-02-16 16:30 - US-009
+- Added @mancedb/lancedb-core dependency to apps/server package.json
+- Updated apps/server/src/sources/lancedb.ts:
+  - Injected ConnectionManager via TypeDI @Inject decorator
+  - Refactored init() to use ConnectionManager.connect() for both local and S3 connections
+  - Updated close() to use ConnectionManager.disconnectAll()
+- Updated apps/server/src/services/database.service.ts:
+  - Injected ConnectionManager and TableManager via TypeDI
+  - Updated connectToDatabase() to use ConnectionManager with proper S3 config
+  - Refactored getTables() to use TableManager.getTables()
+  - Refactored getDatabaseInfo() to use TableManager.getTables()
+  - Updated types to import TableInfo and DatabaseInfo from @mancedb/dto
+  - Added helper method getConnectionUri() to build URI from connection config
+- Typecheck passes, build passes
+
+**Learnings for future iterations:**
+- ConnectionManager from lancedb-core handles both local and S3 connections with proper storage options
+- TableManager.getTables() returns TableInfo[] with rowCount and sizeBytes already populated
+- TypeDI dependency injection uses @Inject(() => ServiceClass) syntax for constructor injection
+- No duplicate utility functions found in server - they weren't previously extracted
+- The eslint-plugin-turbo has a pre-existing issue unrelated to these changes
+---
+
 ## Notes
 
