@@ -114,6 +114,50 @@ if (endpoint === '/api/v1/database/tables' && method === 'GET') {
 }
 ```
 
+## Credential Service
+
+Located at `src/main/services/credential.service.ts`.
+
+The `CredentialService` provides secure storage and retrieval of S3 credentials using Electron's `safeStorage` API.
+
+### Features
+
+- **Encryption**: Uses `safeStorage.encryptString()` to encrypt credentials
+- **Decryption**: Uses `safeStorage.decryptString()` to decrypt credentials
+- **Storage**: Encrypted data is stored in `userData/s3-configs.json`
+- **TypeDI Integration**: Registered as a service for dependency injection
+
+### Usage
+
+```typescript
+import { Container } from 'typedi';
+import { CredentialService } from './services/credential.service';
+
+const credentialService = Container.get(CredentialService);
+
+// Save S3 config with encrypted credentials
+await credentialService.saveS3Config({
+  name: 'Production Bucket',
+  bucket: 'my-bucket',
+  region: 'us-east-1',
+  awsAccessKeyId: 'AKIA...',
+  awsSecretAccessKey: 'secret...'
+});
+
+// Load S3 config with decrypted credentials
+const config = await credentialService.loadS3Config('my-bucket');
+
+// List all saved configs (without credentials)
+const configs = await credentialService.loadAllS3Configs();
+```
+
+### Important Notes
+
+- Encryption availability is system-dependent; check with `isEncryptionAvailable()`
+- Credentials are stored as base64-encoded encrypted buffers
+- The service handles file I/O and JSON serialization automatically
+- Always handle decryption errors gracefully
+
 ## LanceDB Service
 
 Located at `src/main/services/lancedb.service.ts`.

@@ -37,6 +37,7 @@
     "vite-plugin-electron-renderer": "^0.14.6"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.744.0",
     "@lancedb/lancedb": "^0.26.2",
     "@mancedb/dto": "workspace:*",
     "@mancedb/lancedb-core": "workspace:*",
