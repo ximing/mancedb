@@ -8,6 +8,9 @@
 - LanceDB 限制：不支持添加/删除列、不支持表重命名（需复制数据实现）
 - 本地存储使用 localStorage，键名格式：`mancedb_{feature}_{key}`
 - Electron 环境检测使用 `isElectron()` 工具函数，基于 process.versions.electron 和 window.electronAPI
+- Electron 单实例：使用 `app.requestSingleInstanceLock()` 和 `app.on('second-instance')` 处理多实例
+- 窗口状态持久化：存储在 `app.getPath('userData')/window-state.json`
+- 应用菜单：使用 `Menu.buildFromTemplate()` 和 `Menu.setApplicationMenu()`，macOS 有特殊菜单结构
 
 ---
 
@@ -25,8 +28,8 @@
 [x] US-004: 实现本地文件系统访问
 [x] US-005: 实现原生 LanceDB 连接模式
 [x] US-006: 实现连接模式切换 UI
-[ ] US-007: 添加系统集成特性
-[ ] US-008: 实现自动更新检查
+[x] US-007: 添加系统集成特性
+[x] US-008: 实现自动更新检查
 [ ] US-009: 配置跨平台打包
 
 ## 2026-02-16 07:45 - US-001
@@ -144,6 +147,54 @@
 - 使用 `setAPIMode()` 动态切换 HTTP/IPC 模式
 - IPC `db:test` 和 `db:connect` 通道已在 US-005 实现，本故事直接复用
 - 本地存储键名统一使用 `mancedb_` 前缀避免冲突
+---
+
+## 2026-02-16 23:30 - US-007
+- 创建应用菜单模块：apps/client/src/main/menu.ts
+  - macOS 平台：应用菜单（About, Services, Hide, Quit）
+  - 所有平台：File 菜单（New Connection, Open Local Database）
+  - Edit 菜单（Undo, Redo, Cut, Copy, Paste, Select All）
+  - View 菜单（Reload, Force Reload, Zoom, Fullscreen, DevTools）
+  - Window 菜单（Minimize, Close）
+  - Help 菜单（Learn More, Documentation）
+- 创建窗口状态管理工具：apps/client/src/main/utils/window-state.ts
+  - 保存/加载窗口大小、位置、最大化状态、全屏状态
+  - 状态存储在 app.getPath('userData')/window-state.json
+- 更新主进程：apps/client/src/main/index.ts
+  - 添加单实例锁定：app.requestSingleInstanceLock()
+  - 处理 second-instance 事件：聚焦原窗口
+  - 集成应用菜单创建
+  - 集成窗口状态恢复和保存
+  - 添加窗口事件监听（resize, move, maximize, etc.）
+- 添加图标资源：apps/client/public/logo.png, logo.svg
+- 类型检查通过，lint 通过
+
+**Learnings for future iterations:**
+- Electron 单实例模式：使用 requestSingleInstanceLock() 和 second-instance 事件
+- 窗口状态持久化：使用 userData 目录存储 JSON 文件
+- 菜单快捷键：使用 accelerator 字段定义键盘快捷键（CmdOrCtrl+N 等）
+- macOS 特有菜单项：app 菜单、Speech 子菜单、window 菜单项
+- 类型导入：使用 `type MenuItemConstructorOptions` 遵循 verbatimModuleSyntax
+---
+
+## 2026-02-17 00:15 - US-008
+- 安装 electron-updater 依赖
+- 创建自动更新模块：apps/client/src/main/updater.ts
+  - initAutoUpdater(): 初始化自动更新，注册事件处理器
+  - checkForUpdates(): 手动检查更新（用于菜单）
+  - checkForUpdatesOnStartup(): 启动后 5 秒自动检查
+- 更新主进程：集成自动更新初始化和启动检查
+- 更新菜单：Help 菜单添加 "Check for Updates" 选项
+- 开发模式处理：检测 VITE_DEV_SERVER_URL 时跳过更新检查并显示提示
+- 对话框父窗口处理：使用条件判断处理窗口存在/不存在的情况
+- 类型检查通过，lint 通过
+
+**Learnings for future iterations:**
+- electron-updater 需要在生产环境才能正常工作，开发模式需要特殊处理
+- dialog.showMessageBox 有两个重载：带 window 参数和不带 window 参数
+- 使用 `window ? dialog.showMessageBox(window, opts) : dialog.showMessageBox(opts)` 模式处理可选窗口
+- autoUpdater 事件：checking-for-update, update-available, update-not-available, error, download-progress, update-downloaded
+- autoUpdater.quitAndInstall() 会退出应用并安装更新
 ---
 
 ## Notes

@@ -110,8 +110,8 @@
         "类型检查通过"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created application menu with platform-specific adaptations (macOS app menu, File/Edit/View/Window/Help menus). Added keyboard shortcuts for reload, dev tools, new connection, open local database. Implemented window state persistence using userData directory. Added single instance lock with focus-on-second-instance behavior. Added logo assets to public folder for Dock/taskbar icons."
     },
     {
       "id": "US-008",
@@ -125,8 +125,8 @@
         "类型检查通过"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Installed electron-updater. Created updater.ts with initAutoUpdater(), checkForUpdates(), and checkForUpdatesOnStartup(). Auto-update checks run 5 seconds after startup. Manual check available in Help menu. Development mode skips update checks and shows info dialog."
     },
     {
       "id": "US-009",
