@@ -1,5 +1,4 @@
 import { Service } from 'typedi';
-import * as bcrypt from 'bcrypt';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
 import { LanceDbService } from '../sources/lancedb.js';
 import type { ConnectionRecord } from '../models/db/schema.js';
@@ -16,8 +15,6 @@ export interface CreateConnectionInput {
   s3AccessKey?: string;
   s3SecretKey?: string;
   s3Endpoint?: string;
-  dbUsername?: string;
-  dbPassword?: string;
 }
 
 // Type for updating a connection
@@ -30,8 +27,6 @@ export interface UpdateConnectionInput {
   s3AccessKey?: string;
   s3SecretKey?: string;
   s3Endpoint?: string;
-  dbUsername?: string;
-  dbPassword?: string;
 }
 
 // Public connection info (without sensitive fields)
@@ -43,7 +38,6 @@ export interface ConnectionPublicInfo {
   s3Bucket?: string;
   s3Region?: string;
   s3Endpoint?: string;
-  dbUsername?: string;
   createdAt: number;
   updatedAt: number;
   lastConnectedAt?: number;
@@ -92,21 +86,6 @@ export class ConnectionService {
   }
 
   /**
-   * Hash password using bcrypt
-   */
-  private async hashPassword(password: string): Promise<string> {
-    const salt = await bcrypt.genSalt(10);
-    return bcrypt.hash(password, salt);
-  }
-
-  /**
-   * Verify password using bcrypt
-   */
-  async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-    return bcrypt.compare(password, hashedPassword);
-  }
-
-  /**
    * Create a new connection
    */
   async createConnection(input: CreateConnectionInput): Promise<ConnectionRecord> {
@@ -128,8 +107,6 @@ export class ConnectionService {
         s3AccessKey: input.s3AccessKey ? this.encrypt(input.s3AccessKey) : undefined,
         s3SecretKey: input.s3SecretKey ? this.encrypt(input.s3SecretKey) : undefined,
         s3Endpoint: input.s3Endpoint,
-        dbUsername: input.dbUsername,
-        dbPasswordHash: input.dbPassword ? await this.hashPassword(input.dbPassword) : undefined,
         createdAt: now,
         updatedAt: now,
       };
@@ -244,7 +221,6 @@ export class ConnectionService {
       if (input.s3Bucket !== undefined) updateData.s3Bucket = input.s3Bucket;
       if (input.s3Region !== undefined) updateData.s3Region = input.s3Region;
       if (input.s3Endpoint !== undefined) updateData.s3Endpoint = input.s3Endpoint;
-      if (input.dbUsername !== undefined) updateData.dbUsername = input.dbUsername;
 
       // Encrypt sensitive fields
       if (input.s3AccessKey !== undefined) {
@@ -252,9 +228,6 @@ export class ConnectionService {
       }
       if (input.s3SecretKey !== undefined) {
         updateData.s3SecretKey = input.s3SecretKey ? this.encrypt(input.s3SecretKey) : '';
-      }
-      if (input.dbPassword !== undefined) {
-        updateData.dbPasswordHash = input.dbPassword ? await this.hashPassword(input.dbPassword) : '';
       }
 
       await table.update(updateData, { where: `id = '${id}'` });
@@ -407,7 +380,6 @@ export class ConnectionService {
       s3Bucket: record.s3Bucket,
       s3Region: record.s3Region,
       s3Endpoint: record.s3Endpoint,
-      dbUsername: record.dbUsername,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       lastConnectedAt: record.lastConnectedAt,

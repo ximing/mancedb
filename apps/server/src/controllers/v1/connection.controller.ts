@@ -26,8 +26,6 @@ interface CreateConnectionDto {
   s3AccessKey?: string;
   s3SecretKey?: string;
   s3Endpoint?: string;
-  dbUsername?: string;
-  dbPassword?: string;
 }
 
 interface UpdateConnectionDto {
@@ -39,8 +37,6 @@ interface UpdateConnectionDto {
   s3AccessKey?: string;
   s3SecretKey?: string;
   s3Endpoint?: string;
-  dbUsername?: string;
-  dbPassword?: string;
 }
 
 interface TestConnectionResponseDto {
@@ -93,8 +89,6 @@ export class ConnectionV1Controller {
         s3AccessKey: body.s3AccessKey,
         s3SecretKey: body.s3SecretKey,
         s3Endpoint: body.s3Endpoint,
-        dbUsername: body.dbUsername,
-        dbPassword: body.dbPassword,
       };
 
       const connection = await this.connectionService.createConnection(input);
@@ -108,7 +102,6 @@ export class ConnectionV1Controller {
         s3Bucket: connection.s3Bucket,
         s3Region: connection.s3Region,
         s3Endpoint: connection.s3Endpoint,
-        dbUsername: connection.dbUsername,
         createdAt: connection.createdAt,
         updatedAt: connection.updatedAt,
         lastConnectedAt: connection.lastConnectedAt,
@@ -186,8 +179,6 @@ export class ConnectionV1Controller {
         s3AccessKey: body.s3AccessKey,
         s3SecretKey: body.s3SecretKey,
         s3Endpoint: body.s3Endpoint,
-        dbUsername: body.dbUsername,
-        dbPassword: body.dbPassword,
       };
 
       const connection = await this.connectionService.updateConnection(id, input);

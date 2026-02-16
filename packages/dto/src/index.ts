@@ -1,9 +1,3 @@
-// Auth DTOs
-export * from './auth.js';
-
-// User DTOs
-export * from './user.js';
-
 // Connection DTOs
 export * from './connection.js';
 
