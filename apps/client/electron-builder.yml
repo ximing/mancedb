@@ -1,0 +1,97 @@
+# Electron Builder Configuration
+# https://www.electron.build/configuration/configuration
+
+appId: com.mancedb.client
+productName: LanceDB Admin
+copyright: Copyright © 2026 ManceDB
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/main/**/*
+  - dist/preload/**/*
+  - dist/web/**/*
+  - package.json
+extraMetadata:
+  main: dist/main/index.js
+# macOS Configuration
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  icon: build/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
+# Windows Configuration
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - ia32
+    - target: msi
+      arch:
+        - x64
+  icon: build/icon.ico
+  publisherName: ManceDB
+  verifyUpdateCodeSignature: false
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: LanceDB Admin
+  uninstallDisplayName: LanceDB Admin
+  include: build/installer.nsh
+msi:
+  createDesktopShortcut: true
+  runAfterFinish: true
+# Linux Configuration
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Development
+  icon: build/icons
+  maintainer: ManceDB
+  vendor: ManceDB
+  synopsis: LanceDB Admin Desktop Client
+  description: Desktop client for managing LanceDB databases
+  desktop:
+    Name: LanceDB Admin
+    Comment: LanceDB Database Administration Tool
+    Categories: Development;Database;
+appImage:
+  artifactName: ${name}-${version}-${arch}.${ext}
+# Publish Configuration
+publish:
+  provider: github
+  owner: mancedb
+  repo: mancedb
+  releaseType: release
+# Auto-update Configuration
+electronUpdaterCompatibility: '>=6.0.0'

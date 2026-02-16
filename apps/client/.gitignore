@@ -6,6 +6,11 @@ dist
 out
 *.tsbuildinfo
 
+# Don't ignore build resources (icons, entitlements, etc.)
+# These are needed for electron-builder
+!/build
+/build/icon.iconset
+
 # Logs
 logs
 *.log

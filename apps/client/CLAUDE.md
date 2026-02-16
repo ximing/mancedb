@@ -98,3 +98,64 @@ All LanceDB operations throw descriptive errors that are caught in `ipc-router.t
 - Main process logs appear in terminal
 - Renderer logs appear in DevTools console
 - IPC messages are logged with `[IPC Router]` prefix
+
+## Building and Packaging
+
+### Build Configuration
+
+Electron Builder configuration is in `electron-builder.yml`:
+
+- **macOS**: `.dmg` and `.zip` (x64, arm64)
+- **Windows**: `.exe` (NSIS) and `.msi` (x64, ia32)
+- **Linux**: `.AppImage` and `.deb` (x64)
+
+### Build Commands
+
+```bash
+# Build for all platforms (requires native dependencies on each platform)
+pnpm dist:all
+
+# Build for specific platform
+pnpm dist:mac      # macOS only
+pnpm dist:win      # Windows only
+pnpm dist:linux    # Linux only
+
+# Build without packaging (for testing)
+pnpm build
+```
+
+### Icons
+
+Icons are located in `build/` directory:
+
+- `icon.icns` - macOS app icon
+- `icon.ico` - Windows app icon
+- `icon.png` - Linux app icon
+- `icons/` - Linux icon set (16x16 to 512x512)
+
+To regenerate icons from `public/logo.png`:
+
+```bash
+# macOS ICNS
+mkdir -p build/icon.iconset
+for size in 16 32 128 256 512; do
+  magick convert public/logo.png -resize ${size}x${size} build/icon.iconset/icon_${size}x${size}.png
+  magick convert public/logo.png -resize $((size*2))x$((size*2)) build/icon.iconset/icon_${size}x${size}@2x.png
+done
+iconutil -c icns build/icon.iconset -o build/icon.icns
+rm -rf build/icon.iconset
+
+# Windows ICO
+magick convert public/logo.png -define icon:auto-resize=256,128,64,48,32,16 build/icon.ico
+```
+
+### CI/CD
+
+GitHub Actions workflow (`.github/workflows/build-client.yml`) builds for all platforms on push to main and tags. Release artifacts are uploaded automatically.
+
+### Code Signing (Optional)
+
+For production releases, set these secrets in GitHub:
+
+- `CSC_LINK` / `CSC_KEY_PASSWORD` - macOS certificate
+- `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD` - Windows certificate
