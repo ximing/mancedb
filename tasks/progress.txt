@@ -246,5 +246,59 @@
 - 复用 server 中已有的类型定义作为基础，确保兼容性
 ---
 
+## 2026-02-16 16:30 - US-003 (LanceDB Refactor)
+- 创建 packages/lancedb-core/src/utils/filter-builder.ts
+  - buildWhereClause: 从 FilterCondition[] 构建 LanceDB WHERE 子句
+  - buildSingleFilter: 构建单个过滤条件
+  - buildFilterString: buildWhereClause 的别名
+  - escapeFilterValue: 转义字符串值中的单引号
+  - buildIdFilter: 构建 ID 过滤条件
+- 创建 packages/lancedb-core/src/utils/arrow-mapper.ts
+  - mapArrowTypeToDisplayType: 将 Arrow 类型映射为显示类型
+  - parseVectorType: 解析向量类型获取元素类型和维度
+  - isVectorType: 检查是否为向量类型
+  - getTypeByteSize: 获取类型的字节大小估算
+  - mapDisplayTypeToArrowSql: 将显示类型映射为 Arrow SQL 类型
+- 创建 packages/lancedb-core/src/utils/row-processor.ts
+  - isVector: 检查值是否为向量（长度>10的数字数组）
+  - processRow: 处理行数据，截取向量和二进制数据
+  - processValue: 处理单个值
+  - processRows: 批量处理多行
+  - truncateVector: 截取向量显示（显示首尾部分）
+  - getVectorStats: 获取向量统计信息
+- 更新 utils/index.ts 统一导出所有工具函数
+- 添加 @mancedb/dto 依赖到 package.json
+- 修复 eslint.config.mjs 导入路径（添加 .js 扩展名）
+- Typecheck passes
+
+**Learnings for future iterations:**
+- 工具函数使用纯函数设计，便于测试和复用
+- 使用 JSDoc 注释提供完整的类型信息和示例
+- filter-builder 需要处理字符串值的单引号转义（LanceDB SQL 语法）
+- arrow-mapper 需要处理多种 Arrow 类型（fixed_size_list, list, dictionary, timestamp 等）
+- row-processor 的 isVector 使用启发式检测（长度>10的数字数组）
+- eslint.config.mjs 导入需要 .js 扩展名（ESM 要求）
+---
+
+## 2026-02-16 17:00 - US-004 (LanceDB Refactor)
+- 创建 packages/lancedb-core/src/connection/connection-manager.ts
+  - ConnectionManager 类使用 @Service() 装饰器，支持 TypeDI 依赖注入
+  - connect(uri, options) 方法支持本地路径和 S3 URI
+  - getConnection(uri) 返回缓存的连接，避免重复创建
+  - disconnect(uri) 关闭特定连接并从缓存中移除
+  - disconnectAll() 关闭所有连接
+  - 支持 S3ConnectionConfig 配置（bucket, region, accessKey, secretKey, endpoint）
+- 更新 packages/lancedb-core/src/connection/index.ts 导出 ConnectionManager
+- 修复 rollup.config.js 使用 createRollupConfig 替代 defineConfig
+- Typecheck passes, build passes
+
+**Learnings for future iterations:**
+- ConnectionManager 使用 Map<string, ConnectionEntry> 缓存连接，键为 URI
+- S3 连接需要 storageOptions 配置：virtualHostedStyleRequest, conditionalPut, awsAccessKeyId 等
+- LanceDB 的 Connection 对象需要显式调用 close() 释放资源
+- 使用 TypeDI @Service() 装饰器实现单例模式，无需手动实现
+- rollup.config.js 必须使用 createRollupConfig 并传入 input 和 packageDir
+---
+
 ## Notes
 
