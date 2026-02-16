@@ -1,20 +1,21 @@
 {
-  "project": "LanceDB Admin",
-  "branchName": "feat/electron-client",
-  "baseBranch": "main",
-  "description": "Electron Desktop Client - 为 LanceDB Admin 提供桌面客户端支持，基于 Electron 构建跨平台应用，复用现有 Web 端代码，同时提供本地文件系统访问和原生 LanceDB 数据库操作能力",
+  "project": "mancedb",
+  "branchName": "ralph/lancedb-refactor",
+  "description": "LanceDB 代码重构与共享核心包 - 将 client 从 vectordb 迁移到 @lancedb/lancedb，创建共享的 lancedb-core 包，统一 client 和 server 的数据库服务架构",
   "userStories": [
     {
       "id": "US-001",
-      "title": "创建 Electron 基础项目结构",
-      "description": "作为开发者，我需要在 apps/client 目录下建立 Electron 项目，为桌面客户端提供基础架构",
+      "title": "创建 lancedb-core 共享包",
+      "description": "作为开发者，我需要一个共享的 LanceDB 核心包目录结构和基础配置，这样后续可以添加核心模块。",
       "acceptanceCriteria": [
-        "在 apps/client 创建完整的 Electron 项目结构（main, preload, renderer）",
-        "配置 TypeScript 支持",
-        "配置 Vite 作为构建工具",
-        "配置 ESLint 和 Prettier",
-        "添加开发启动脚本（hot reload）",
-        "类型检查通过"
+        "创建 packages/lancedb-core 目录结构（src/connection, src/table, src/query, src/utils）",
+        "创建 package.json，配置 name 为 @mancedb/lancedb-core",
+        "配置 TypeScript（tsconfig.json），设置输出到 dist/",
+        "添加 @lancedb/lancedb ^0.26.2 作为依赖",
+        "添加 typedi 和 reflect-metadata 作为依赖",
+        "配置 exports 字段，导出 ./dist/index.js",
+        "更新 pnpm-workspace.yaml 包含新包",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
@@ -22,128 +23,253 @@
     },
     {
       "id": "US-002",
-      "title": "集成 Web 应用到 Electron",
-      "description": "作为用户，我希望桌面客户端与 Web 端有完全一致的用户界面和体验",
+      "title": "迁移共享类型定义到 dto 包",
+      "description": "作为开发者，我需要统一类型定义在 packages/dto 中，避免多处重复定义。",
       "acceptanceCriteria": [
-        "Electron 成功加载 apps/web 的构建产物",
-        "复用 apps/web 的所有组件、样式和路由",
-        "确保所有 Web 端功能在 Electron 中正常工作",
-        "处理文件系统路径和路由的兼容性",
-        "类型检查通过",
-        "验证界面渲染正常"
+        "在 packages/dto/src 创建 database.dto.ts，导出 TableInfo, DatabaseInfo 接口",
+        "在 packages/dto/src 创建 table.dto.ts，导出 ColumnInfo, TableSchema 接口",
+        "在 packages/dto/src 创建 query.dto.ts，导出 FilterCondition, TableDataResult 接口",
+        "更新 packages/dto/src/index.ts 导出所有新类型",
+        "编译 packages/dto 确保无错误",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Electron loads web app from dev server in development, built files in production. Uses HashRouter for Electron (file:// protocol) and BrowserRouter for browser."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "实现 Web 项目 Electron 适配改造",
-      "description": "作为开发者，我需要改造 apps/web 项目，使其能同时支持浏览器和 Electron 环境",
+      "title": "提取共享工具函数到 lancedb-core",
+      "description": "作为开发者，我需要复用过滤构建、Arrow 类型映射、行处理等工具函数。",
       "acceptanceCriteria": [
-        "添加 Electron 环境检测工具函数",
-        "API 客户端支持两种模式：HTTP 请求（远程模式）和 IPC 调用（本地模式）",
-        "配置运行时环境变量区分 electron/server 模式",
-        "确保 Web 端在浏览器环境行为不变",
-        "类型检查通过"
+        "创建 packages/lancedb-core/src/utils/filter-builder.ts，实现 buildWhereClause 函数",
+        "创建 packages/lancedb-core/src/utils/arrow-mapper.ts，实现 arrowTypeToString 函数",
+        "创建 packages/lancedb-core/src/utils/row-processor.ts，实现 processRow 和 isVector 函数",
+        "为每个工具函数添加 JSDoc 注释说明参数和返回值",
+        "创建 packages/lancedb-core/src/utils/index.ts 统一导出",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Created unified API client (api-client.ts) that supports both HTTP and IPC modes. Environment detection utilities already existed. Updated all API files to use the new apiClient. Extended ElectronAPI with invoke method for IPC communication."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "实现本地文件系统访问",
-      "description": "作为用户，我希望通过原生对话框浏览和选择本地数据库文件夹",
+      "title": "实现 ConnectionManager 连接管理器",
+      "description": "作为开发者，我需要一个管理 LanceDB 连接的类，支持本地和 S3 存储。",
       "acceptanceCriteria": [
-        "实现 IPC 通道：打开文件夹选择对话框",
-        "在 UI 中添加'打开本地数据库'按钮（Electron 环境显示）",
-        "支持选择文件夹路径并传递给后端",
-        "处理无权限/路径不存在等错误情况",
-        "类型检查通过"
+        "创建 packages/lancedb-core/src/connection/connection-manager.ts",
+        "实现 ConnectionManager 类，使用 @Service() 装饰器",
+        "实现 connect(uri: string, options?: ConnectionOptions) 方法，支持本地路径和 S3 URI",
+        "实现 getConnection(uri: string) 方法返回缓存的连接",
+        "实现 disconnect(uri: string) 方法关闭特定连接",
+        "使用单例模式管理连接缓存（Map<string, Connection>）",
+        "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Implemented IPC channel 'dialog:openDirectory' in main process. Added Browse button to connection form that only shows in Electron. Uses dialog.showOpenDialog with properties: ['openDirectory'] to select folders."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "实现原生 LanceDB 连接模式",
-      "description": "作为用户，我希望 Electron 能直接操作本地 LanceDB 数据库，无需启动后端服务",
+      "title": "实现 SchemaManager Schema 管理器",
+      "description": "作为开发者，我需要一个解析 Arrow Schema 的类，提供标准化的列信息。",
       "acceptanceCriteria": [
-        "在 Electron main 进程集成 LanceDB Node.js SDK",
-        "实现 IPC API 映射层（复用现有 HTTP API 接口定义）",
-        "支持的操作：连接数据库、获取表列表、查询数据、创建/删除表",
-        "错误处理：数据库不存在、格式错误、权限问题",
-        "类型检查通过"
+        "创建 packages/lancedb-core/src/schema/schema-manager.ts",
+        "实现 SchemaManager 类，使用 @Service() 装饰器",
+        "实现 getTableSchema(table: Table) 方法，返回 ColumnInfo[]",
+        "正确解析 Arrow 字段类型（Int, Float, Utf8, Binary, FixedSizeList 等）",
+        "使用 arrow-mapper.ts 中的工具函数转换类型",
+        "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Installed vectordb SDK. Created lancedb.service.ts with full CRUD operations. Created ipc-router.ts to map all web API endpoints to local LanceDB operations. All API calls from web app now work in local mode via IPC."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-006",
-      "title": "实现连接模式切换 UI",
-      "description": "作为用户，我希望在应用启动时选择工作模式：连接远程服务或直接打开本地数据库",
+      "title": "实现 TableManager 表管理器",
+      "description": "作为开发者，我需要一个封装表 CRUD 操作的类。",
       "acceptanceCriteria": [
-        "添加启动模式选择界面（远程服务 / 本地数据库）",
-        "远程模式：输入服务器地址和端口",
-        "本地模式：打开文件夹选择对话框",
-        "记住上次选择的模式/地址",
-        "类型检查通过",
-        "验证界面和交互正常"
+        "创建 packages/lancedb-core/src/table/table-manager.ts",
+        "实现 TableManager 类，使用 @Service() 装饰器，注入 ConnectionManager",
+        "实现 getTables(uri: string) 方法，列出所有表名",
+        "实现 getTable(uri: string, tableName: string) 方法，返回 Table 对象",
+        "实现 createTable(uri: string, tableName: string, data: RecordBatch) 方法",
+        "实现 deleteTable(uri: string, tableName: string) 方法",
+        "实现 renameTable(uri: string, oldName: string, newName: string) 方法",
+        "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Created StartupModePage component with mode selection cards. Remote mode connects to server URL and navigates to /auth. Local mode opens folder dialog and connects directly to database. Settings persisted to localStorage with 'mancedb_' prefix keys."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-007",
-      "title": "添加系统集成特性",
-      "description": "作为用户，我希望客户端有原生应用的体验（菜单、快捷键、托盘等）",
+      "title": "实现 QueryEngine 查询引擎",
+      "description": "作为开发者，我需要一个支持过滤查询和 SQL 执行的查询引擎。",
       "acceptanceCriteria": [
-        "配置应用菜单（macOS: 顶部菜单栏，Windows/Linux: 窗口菜单）",
-        "支持键盘快捷键（刷新、切换开发者工具等）",
-        "窗口状态管理（记住大小和位置）",
-        "处理多实例启动（单实例锁定）",
-        "添加 Dock/任务栏图标",
-        "类型检查通过"
+        "创建 packages/lancedb-core/src/query/query-engine.ts",
+        "实现 QueryEngine 类，使用 @Service() 装饰器",
+        "实现 queryTable(params) 方法，支持分页、排序、过滤",
+        "使用 table.query().where().limit() API 进行过滤查询",
+        "使用 filter-builder.ts 构建 where 条件",
+        "实现 executeSql(uri: string, sql: string) 方法执行 SQL SELECT",
+        "返回 TableDataResult 格式的结果，使用 row-processor.ts 处理行数据",
+        "Typecheck passes"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Created application menu with platform-specific adaptations (macOS app menu, File/Edit/View/Window/Help menus). Added keyboard shortcuts for reload, dev tools, new connection, open local database. Implemented window state persistence using userData directory. Added single instance lock with focus-on-second-instance behavior. Added logo assets to public folder for Dock/taskbar icons."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-008",
-      "title": "实现自动更新检查",
-      "description": "作为用户，我希望客户端能检查并提示新版本更新",
+      "title": "导出 lancedb-core 公共 API",
+      "description": "作为开发者，我需要从 lancedb-core 包导出所有公共模块，供外部使用。",
       "acceptanceCriteria": [
-        "集成 electron-updater",
-        "启动时检查更新",
-        "发现新版本时显示提示对话框",
-        "支持手动检查更新菜单项",
-        "类型检查通过"
+        "更新 packages/lancedb-core/src/index.ts",
+        "导出 ConnectionManager 类",
+        "导出 SchemaManager 类",
+        "导出 TableManager 类",
+        "导出 QueryEngine 类",
+        "导出所有工具函数（filter-builder, arrow-mapper, row-processor）",
+        "运行 pnpm build 确保包可以成功编译",
+        "Typecheck passes"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Installed electron-updater. Created updater.ts with initAutoUpdater(), checkForUpdates(), and checkForUpdatesOnStartup(). Auto-update checks run 5 seconds after startup. Manual check available in Help menu. Development mode skips update checks and shows info dialog."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-009",
-      "title": "配置跨平台打包",
-      "description": "作为开发者，我需要配置 Electron Builder 生成各平台的安装包",
+      "title": "重构 server 使用 lancedb-core - 数据库服务",
+      "description": "作为开发者，我需要让 server 的数据库服务使用共享的 lancedb-core 包。",
       "acceptanceCriteria": [
-        "配置 electron-builder",
-        "支持 macOS (.dmg, .zip)",
-        "支持 Windows (.exe, .msi)",
-        "支持 Linux (.AppImage, .deb)",
-        "配置应用图标和元数据",
-        "构建流程能在 CI 中运行",
-        "类型检查通过"
+        "在 apps/server 添加 @mancedb/lancedb-core 依赖",
+        "更新 apps/server/src/sources/lancedb.ts，使用 ConnectionManager",
+        "更新 apps/server/src/services/database.service.ts，使用 TableManager 获取表列表",
+        "删除 server 中重复的工具函数（filter-builder, arrow-mapper）",
+        "更新类型导入，从 @mancedb/dto 导入 TableInfo, DatabaseInfo",
+        "Typecheck passes"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": "Configured electron-builder with support for macOS (.dmg, .zip), Windows (.exe, .msi), and Linux (.AppImage, .deb). Created all required icon formats (icns, ico, png). Added build scripts and GitHub Actions CI workflow for automated cross-platform builds."
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "重构 server 使用 lancedb-core - 表和查询服务",
+      "description": "作为开发者，我需要让 server 的表服务和查询服务使用 lancedb-core。",
+      "acceptanceCriteria": [
+        "更新 apps/server/src/services/table.service.ts，使用 SchemaManager 和 QueryEngine",
+        "更新 apps/server/src/services/query.service.ts，使用 QueryEngine",
+        "删除 server 中重复的 row-processor 逻辑",
+        "确保所有现有 API 端点功能正常工作",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "统一 client 的 DI 架构",
+      "description": "作为开发者，我需要 client 使用与 server 一致的依赖注入架构。",
+      "acceptanceCriteria": [
+        "在 apps/client 添加 typedi 和 reflect-metadata 依赖",
+        "创建 apps/client/src/main/container.ts，配置 TypeDI Container",
+        "更新 apps/client/src/main/main.ts，在应用启动时初始化 DI 容器",
+        "确保 container.ts 导入所有需要的服务",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "重构 client 使用 lancedb-core - 升级 LanceDB 包",
+      "description": "作为开发者，我需要将 client 从 vectordb 迁移到 @lancedb/lancedb，并使用共享包。",
+      "acceptanceCriteria": [
+        "从 apps/client 移除 vectordb 依赖",
+        "在 apps/client 添加 @lancedb/lancedb ^0.26.2",
+        "在 apps/client 添加 @mancedb/lancedb-core 和 @mancedb/dto 依赖",
+        "更新 apps/client/src/main/services/lancedb.service.ts，使用 ConnectionManager, TableManager, QueryEngine",
+        "将 lancedb.service.ts 改为 TypeDI Service 类（使用 @Service()）",
+        "更新类型导入，从 @mancedb/dto 导入",
+        "确保本地数据库连接、查询、表操作功能正常",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "重构 client 使用 lancedb-core - 更新 IPC 路由",
+      "description": "作为开发者，我需要更新 client 的 IPC 路由以适配新的 DI 服务架构。",
+      "acceptanceCriteria": [
+        "更新 apps/client/src/main/ipc-router.ts，从 DI 容器获取 LanceDBService",
+        "更新 IPC 处理器以调用新服务的方法",
+        "确保所有 IPC 端点响应格式保持不变",
+        "确保渲染进程到主进程的通信正常",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "为 client 添加 S3 存储支持 - 凭证管理",
+      "description": "作为用户，我希望 Electron 客户端能安全地存储 S3 凭证。",
+      "acceptanceCriteria": [
+        "在 apps/client 添加 aws-sdk 依赖（@aws-sdk/client-s3）",
+        "创建 apps/client/src/main/services/credential.service.ts",
+        "实现 encryptCredential(credential: string) 方法，使用 safeStorage.encryptString",
+        "实现 decryptCredential(encrypted: Buffer) 方法，使用 safeStorage.decryptString",
+        "实现 saveS3Config(config: S3Config) 方法，加密存储到本地文件",
+        "实现 loadS3Config() 方法，从本地文件读取并解密",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "为 client 添加 S3 存储支持 - 连接配置 UI",
+      "description": "作为用户，我希望在 Electron 客户端中配置 S3 连接。",
+      "acceptanceCriteria": [
+        "创建或更新连接配置对话框组件，支持 S3 选项",
+        "添加 S3 配置表单字段：bucket, region, accessKeyId, secretAccessKey, endpoint（可选）",
+        "实现本地文件模式和 S3 模式的切换 UI",
+        "更新 IPC 通道，支持传递 S3 配置到主进程",
+        "在主进程中使用 ConnectionManager 连接 S3 URI",
+        "连接成功后显示数据库表列表",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "验证 client 和 server 功能一致性",
+      "description": "作为开发者，我需要确保重构后 client 和 server 功能完全一致。",
+      "acceptanceCriteria": [
+        "列出 client 和 server 的所有 API 端点，对比功能覆盖",
+        "测试 client 本地数据库的所有操作（连接、获取表列表、查询数据、CRUD）",
+        "测试 client S3 数据库连接和操作",
+        "测试 server 本地和 S3 数据库的所有操作",
+        "确保错误处理格式一致（APIResponse 结构）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

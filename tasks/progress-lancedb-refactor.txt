@@ -1,0 +1,55 @@
+## Codebase Patterns
+- Use TypeDI @Service() decorator for dependency injection
+- LanceDB new SDK (@lancedb/lancedb) uses `connect(uri)` and `Table` class API
+- Connection caching uses Map<string, Connection> with URI as key
+- Arrow types: Int, Float, Utf8, Binary, FixedSizeList for vectors
+- Export patterns: index.ts files in each module directory
+- DTO types go in @mancedb/dto package
+- Shared core logic goes in @mancedb/lancedb-core package
+
+---
+
+# Ralph Progress Log
+# Project: LanceDB Refactor - Shared Core Package
+# Branch: ralph/lancedb-refactor
+# Base Branch: feat/electron-client
+# Started: 2026-02-16
+
+## User Stories
+
+[ ] US-001: 创建 lancedb-core 共享包
+[ ] US-002: 迁移共享类型定义到 dto 包
+[ ] US-003: 提取共享工具函数到 lancedb-core
+[ ] US-004: 实现 ConnectionManager 连接管理器
+[ ] US-005: 实现 SchemaManager Schema 管理器
+[ ] US-006: 实现 TableManager 表管理器
+[ ] US-007: 实现 QueryEngine 查询引擎
+[ ] US-008: 导出 lancedb-core 公共 API
+[ ] US-009: 重构 server 使用 lancedb-core - 数据库服务
+[ ] US-010: 重构 server 使用 lancedb-core - 表和查询服务
+[ ] US-011: 统一 client 的 DI 架构
+[ ] US-012: 重构 client 使用 lancedb-core - 升级 LanceDB 包
+[ ] US-013: 重构 client 使用 lancedb-core - 更新 IPC 路由
+[ ] US-014: 为 client 添加 S3 存储支持 - 凭证管理
+[ ] US-015: 为 client 添加 S3 存储支持 - 连接配置 UI
+[ ] US-016: 验证 client 和 server 功能一致性
+
+## 2026-02-16 - US-001
+- Created packages/lancedb-core directory structure
+  - src/connection/, src/table/, src/query/, src/utils/
+- Created package.json with name @mancedb/lancedb-core
+- Configured TypeScript (tsconfig.json) with output to dist/
+- Added dependencies: @lancedb/lancedb ^0.26.2, typedi, reflect-metadata
+- Configured exports field for both ESM and CJS
+- pnpm-workspace.yaml already includes packages/* pattern
+- Typecheck passes
+
+**Learnings for future iterations:**
+- Follow the same structure as @mancedb/dto package for consistency
+- Use rollup.config.js from @mancedb/rollup-config for builds
+- emitDecoratorMetadata and experimentalDecorators required for TypeDI
+- Module: NodeNext is required for proper ESM support
+---
+
+## Notes
+
