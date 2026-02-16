@@ -216,8 +216,8 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed as part of US-012: ipc-router.ts now uses Container.get(LanceDBService) to get service instance, all IPC handlers call new service methods, response format unchanged, typecheck passes"
     },
     {
       "id": "US-014",
