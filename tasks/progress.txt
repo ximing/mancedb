@@ -14,7 +14,58 @@
 - Query History: Server persists to LanceDB table, Client returns empty array (local mode doesn't persist)
 - Column Operations: Server supports addColumn/dropColumn via LanceDB's addColumns/dropColumns API, Client throws "not supported" error
 - JWT Removal Pattern: When removing JWT auth, provide fallback secrets for type compatibility in deprecated services
+- Migration Pattern: When removing a table, replace its migration with a placeholder to maintain version sequence
+- DTO Removal Pattern: When removing DTO exports, check all consumers to ensure they don't break; replace with inline types if needed
 
+---
+
+## 2026-02-17 - US-003
+- Deleted UserService (apps/server/src/services/user.service.ts)
+- Deleted user schema (apps/server/src/models/db/user.schema.ts)
+- Removed user.schema export from apps/server/src/models/db/index.ts
+- Simplified AuthController to return error responses for all auth endpoints
+  - /register, /login, /connections/login, /connections/refresh all return error
+- Simplified UserController to remove UpdateUserDto dependency
+  - Uses Record<string, unknown> for body type instead
+- Simplified ConnectionAuthService to remove JWT logic
+  - authenticate(), refreshToken(), verifyToken() all return error/null
+- Removed bcrypt password hashing from ConnectionService
+  - Removed hashPassword() and verifyPassword() methods
+- Removed dbUsername and dbPasswordHash fields from ConnectionRecord schema
+  - Updated CreateConnectionInput and UpdateConnectionInput interfaces
+  - Updated connectionsSchema in schema.ts
+  - Updated ConnectionPublicInfo interface
+- Updated ConnectionController to remove dbUsername/dbPassword from DTOs
+- Removed auth.ts and user.ts exports from DTO package (packages/dto/src/index.ts)
+- Typecheck passes for all packages (server, dto, lancedb-core, client)
+- Lint has pre-existing eslint-plugin-turbo issue (not related to changes)
+
+**Learnings for future iterations:**
+- When removing DTO exports, check all consumers and replace with inline types if needed
+- Connection-level authentication (dbUsername/dbPassword) should also be removed when removing user auth
+- bcrypt dependency can be removed from server package if no longer used elsewhere
+- Keep deprecated controllers returning error responses for API compatibility during transition
+- When removing schema fields, update both the Arrow schema and the TypeScript interface
+---
+
+## 2026-02-17 - US-002
+- Removed usersSchema and UserRecord from apps/server/src/models/db/schema.ts
+- Replaced usersTableMigration with tableMigrationsMigration in apps/server/src/migrations/scripts/001-init.ts
+  - The new migration is a placeholder since table_migrations is managed automatically
+- Removed users table indexes from apps/server/src/migrations/scripts/002-create-indexes.ts
+  - Removed uid, email, phone, status indexes
+  - Removed 'users' from tablesToIndex array
+- Updated apps/server/src/migrations/scripts/index.ts to use tableMigrationsMigration
+- Removed UserRecord export from apps/server/src/sources/lancedb.ts
+- Updated optimizeAllTables() in lancedb.ts to only include 'table_migrations'
+- Typecheck passes for server package
+- Lint has pre-existing eslint-plugin-turbo issue (not related to changes)
+
+**Learnings for future iterations:**
+- When removing a table migration, replace it with a placeholder migration to maintain the version sequence
+- The table_migrations table is created automatically by the migration system, so its migration can be a no-op
+- Always check optimizeAllTables() and similar methods that reference table names by string
+- Keep connections and query_history tables as they are needed for the admin tool functionality
 ---
 
 ## 2026-02-16 22:00 - US-015

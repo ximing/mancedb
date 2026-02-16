@@ -31,8 +31,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Removed usersSchema and UserRecord, replaced usersTableMigration with tableMigrationsMigration, removed users indexes, typecheck passes"
     },
     {
       "id": "US-003",
@@ -47,8 +47,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Deleted UserService and user.schema, simplified AuthController and UserController, removed JWT logic from ConnectionAuthService, removed bcrypt from ConnectionService, removed dbUsername/dbPasswordHash fields, typecheck passes"
     },
     {
       "id": "US-004",
