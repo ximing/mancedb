@@ -30,7 +30,7 @@
 [x] US-006: 实现连接模式切换 UI
 [x] US-007: 添加系统集成特性
 [x] US-008: 实现自动更新检查
-[ ] US-009: 配置跨平台打包
+[x] US-009: 配置跨平台打包
 
 ## 2026-02-16 07:45 - US-001
 - 创建 apps/client 目录，包含完整的 Electron 项目结构
@@ -195,6 +195,40 @@
 - 使用 `window ? dialog.showMessageBox(window, opts) : dialog.showMessageBox(opts)` 模式处理可选窗口
 - autoUpdater 事件：checking-for-update, update-available, update-not-available, error, download-progress, update-downloaded
 - autoUpdater.quitAndInstall() 会退出应用并安装更新
+---
+
+## 2026-02-16 08:30 - US-009
+- Created electron-builder.yml with full cross-platform configuration
+  - macOS: .dmg and .zip for x64 and arm64 architectures
+  - Windows: .exe (NSIS) and .msi for x64 and ia32 architectures
+  - Linux: .AppImage and .deb for x64 architecture
+- Created build resources directory with all required assets:
+  - icon.icns (macOS app icon with multiple sizes)
+  - icon.ico (Windows app icon with multiple sizes)
+  - icon.png + icons/ directory (Linux icon set)
+  - entitlements.mac.plist (macOS code signing entitlements)
+  - installer.nsh (Windows NSIS installer customizations)
+- Updated package.json with build scripts:
+  - `dist`: Build for current platform
+  - `dist:all`: Build for all platforms (macOS, Windows, Linux)
+  - `dist:mac`, `dist:win`, `dist:linux`: Platform-specific builds
+  - `postinstall`: Install app dependencies for native modules
+- Created GitHub Actions workflow (.github/workflows/build-client.yml):
+  - Builds on macOS, Ubuntu, and Windows runners
+  - Runs typecheck and lint before building
+  - Uploads artifacts for each platform
+  - Creates GitHub releases on version tags
+- Updated .gitignore to allow build resources while ignoring build outputs
+- Updated CLAUDE.md with build documentation and icon generation commands
+- Type check and lint pass
+
+**Learnings for future iterations:**
+- electron-builder configuration uses `directories.output` for release artifacts location
+- macOS code signing requires entitlements for file system access (user-selected files)
+- Windows NSIS installer can be customized with .nsh scripts
+- GitHub Actions secrets needed for code signing: CSC_LINK/CSC_KEY_PASSWORD (macOS), WIN_CSC_LINK/WIN_CSC_KEY_PASSWORD (Windows)
+- Icon formats needed: .icns (macOS), .ico (Windows), .png set (Linux)
+- The `build` directory name conflicts with common .gitignore patterns - need explicit exception
 ---
 
 ## Notes
