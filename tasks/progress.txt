@@ -231,5 +231,20 @@
 - The `build` directory name conflicts with common .gitignore patterns - need explicit exception
 ---
 
+## 2026-02-16 16:10 - US-002
+- 创建 packages/dto/src/database.dto.ts，导出 TableInfo 和 DatabaseInfo 接口
+- 创建 packages/dto/src/table.dto.ts，导出 ColumnInfo, TableSchema, FilterCondition, TableDataResult 等接口
+- 更新 packages/dto/src/index.ts，导出所有新的 DTO 类型
+- 编译 packages/dto 成功，所有类型正确生成到 dist/index.d.ts
+- 类型包含完整的 JSDoc 注释，便于 IDE 提示
+
+**Learnings for future iterations:**
+- DTO 包使用 rollup 构建，生成 CommonJS 和 ESM 两种格式
+- 类型定义文件在 dist/types/ 目录，最终合并到 dist/index.d.ts
+- 所有 DTO 接口使用可序列化的类型（适合 JSON 和 IPC 传输）
+- 向量维度使用可选字段 vectorDimension?: number 标识
+- 复用 server 中已有的类型定义作为基础，确保兼容性
+---
+
 ## Notes
 
