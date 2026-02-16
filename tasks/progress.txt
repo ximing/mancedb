@@ -4,7 +4,24 @@
 - Electron Main Process DI: Initialize container in app.whenReady() before registering IPC handlers
 - Electron Native Modules: Add native dependencies like @lancedb/lancedb to rollup external in vite.config.ts
 - TypeScript Decorators: Enable experimentalDecorators and emitDecoratorMetadata in tsconfig for TypeDI
+- IPC Router DI Pattern: Use Container.get(ServiceClass) in a helper function to retrieve services
 
+---
+
+## 2026-02-16 19:00 - US-013
+- Completed as part of US-012 implementation
+- Updated ipc-router.ts to use DI container:
+  - Added getLanceDBService() helper that calls Container.get(LanceDBService)
+  - All route handlers now get service instance via getLanceDBService()
+  - IPC handlers (db:connect, db:disconnect, db:test) also use the DI container
+- All IPC endpoints maintain the same response format for backward compatibility
+- Renderer to main process communication works correctly through the DI service
+- Typecheck passes, build passes
+
+**Learnings for future iterations:**
+- Using a helper function like getLanceDBService() makes it easy to switch between DI and direct instantiation
+- The IPC router pattern separates routing logic from service implementation
+- All service methods should return plain objects suitable for IPC serialization
 ---
 
 ## 2026-02-16 18:30 - US-012
