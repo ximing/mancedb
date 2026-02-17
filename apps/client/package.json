@@ -1,7 +1,7 @@
 {
   "name": "@mancedb/client",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Desktop client for managing LanceDB databases",
   "author": "ManceDB",
   "license": "BSL-1.1",
