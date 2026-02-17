@@ -1,4 +1,4 @@
- # Environment variables
+# Environment variables
 .env
 .env.*
 !.env.example
@@ -9,6 +9,8 @@ temp
 .DS_Store
 apps/server/public
 .turbo
+release
+apps/*/release
 
 # Data directories
 lancedb_data/

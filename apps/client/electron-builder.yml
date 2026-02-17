@@ -3,7 +3,6 @@
 
 appId: com.mancedb.client
 productName: ManceDB
-homepage: https://github.com/mancedb/mancedb
 copyright: Copyright © 2026 ManceDB
 directories:
   output: release
@@ -30,6 +29,8 @@ mac:
   icon: build/icon.icns
   hardenedRuntime: false
   gatekeeperAssess: false
+  sign: null
+  notarize: null
 dmg:
   contents:
     - x: 130
@@ -87,11 +88,11 @@ appImage:
   artifactName: ${productName}-${version}-${arch}.${ext}
 deb:
   artifactName: ${productName}-${version}-${arch}.${ext}
-# Publish Configuration
-publish:
-  provider: github
-  owner: ${GITHUB_OWNER}
-  repo: ${GITHUB_REPO}
-  releaseType: release
+# Publish Configuration (optional - only used during CI/CD)
+# publish:
+#   provider: github
+#   owner: ${GITHUB_OWNER}
+#   repo: ${GITHUB_REPO}
+#   releaseType: release
 # Auto-update Configuration
 electronUpdaterCompatibility: '>=6.0.0'
