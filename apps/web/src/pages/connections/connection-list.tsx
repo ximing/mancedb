@@ -53,6 +53,18 @@ const ArrowRightIcon = () => (
   </svg>
 );
 
+const KeyIcon = () => (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+  </svg>
+);
+
+const UnlockIcon = () => (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+  </svg>
+);
+
 const EmptyStateIcon = () => (
   <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
@@ -81,6 +93,7 @@ interface ConnectionCardProps {
 
 const ConnectionCard = ({ connection, onDelete, onClick }: ConnectionCardProps) => {
   const isLocal = connection.type === 'local';
+  const hasCredentials = connection.hasCredentials;
 
   return (
     <div
@@ -108,9 +121,25 @@ const ConnectionCard = ({ connection, onDelete, onClick }: ConnectionCardProps) 
           <h3 className="font-semibold text-gray-900 dark:text-white truncate">
             {connection.name}
           </h3>
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 ${isLocal ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400'}`}>
-            {isLocal ? 'Local' : 'S3'}
-          </span>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isLocal ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400'}`}>
+              {isLocal ? 'Local' : 'S3'}
+            </span>
+            {/* Credential status indicator - only show for S3 connections */}
+            {!isLocal && (
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                  hasCredentials
+                    ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                }`}
+                title={hasCredentials ? 'Credentials configured' : 'No credentials (public bucket)'}
+              >
+                {hasCredentials ? <KeyIcon /> : <UnlockIcon />}
+                {hasCredentials ? 'Authenticated' : 'Public'}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

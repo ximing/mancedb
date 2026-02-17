@@ -13,6 +13,7 @@ export interface ConnectionDto {
   s3Region?: string;
   s3Endpoint?: string;
   dbUsername?: string;
+  hasCredentials?: boolean;
   createdAt: number;
   updatedAt: number;
   lastConnectedAt?: number;

@@ -25,6 +25,30 @@
 - S3 Empty Credentials Pattern: ConnectionManager.createS3Connection already handles empty credentials by only adding them to storageOptions when present (supports public S3 buckets)
 - **Form Validation Pattern: Credential fields (s3AccessKey, s3SecretKey, dbPassword) should not have required validation to support public S3 buckets and unauthenticated local databases**
 - **Form Label Pattern: Add "(Optional)" suffix to field labels for optional fields, and provide clear help text explaining when the field is required**
+- **Credential Status Pattern: Add `hasCredentials` boolean field to ConnectionDto to indicate credential status without exposing actual credentials**
+- **Credential Status UI Pattern: Show visual indicator (tag/badge) next to connection type for S3 connections indicating 'Authenticated' (with credentials) vs 'Public' (no credentials)**
+
+---
+
+## 2026-02-17 - US-005 (Optional Connection Credentials)
+- Added `hasCredentials` field to `ConnectionDto` interface in packages/dto/src/connection.ts
+- Added `hasCredentials` field to `ConnectionPublicInfo` interface in apps/server/src/services/connection.service.ts
+- Updated `toPublicInfo()` method to compute `hasCredentials` based on presence of s3AccessKey and s3SecretKey
+- Added KeyIcon and UnlockIcon SVG components to connection-list.tsx
+- Added credential status badge to ConnectionCard component for S3 connections:
+  - Shows 'Authenticated' (green) when hasCredentials is true
+  - Shows 'Public' (gray) when hasCredentials is false or undefined
+- Badge includes tooltip explaining the credential status
+- Typecheck passes for dto package
+- Lint passes with only pre-existing warnings
+
+**Learnings for future iterations:**
+- Use a boolean flag (`hasCredentials`) to indicate credential status without exposing actual credential values
+- Compute the flag server-side by checking if encrypted credential fields exist
+- For S3 connections: check both s3AccessKey and s3SecretKey are present
+- For local connections: always set hasCredentials to false (they don't use stored credentials)
+- Use different colored badges to distinguish credential states (green for authenticated, gray for public)
+- Only show credential status for S3 connections (local connections don't have this concept)
 
 ---
 

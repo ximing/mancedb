@@ -77,8 +77,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added hasCredentials field to ConnectionDto and ConnectionPublicInfo. UI shows 'Authenticated' (green) or 'Public' (gray) badge for S3 connections."
     }
   ]
 }

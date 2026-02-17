@@ -38,6 +38,7 @@ export interface ConnectionPublicInfo {
   s3Bucket?: string;
   s3Region?: string;
   s3Endpoint?: string;
+  hasCredentials?: boolean;
   createdAt: number;
   updatedAt: number;
   lastConnectedAt?: number;
@@ -374,6 +375,11 @@ export class ConnectionService {
    * Convert a ConnectionRecord to public info (removing sensitive fields)
    */
   private toPublicInfo(record: ConnectionRecord): ConnectionPublicInfo {
+    // Check if connection has credentials (for S3: access key, for local: no credentials needed)
+    const hasCredentials = record.type === 's3'
+      ? !!(record.s3AccessKey && record.s3SecretKey)
+      : false; // Local connections don't use stored credentials
+
     return {
       id: record.id,
       name: record.name,
@@ -382,6 +388,7 @@ export class ConnectionService {
       s3Bucket: record.s3Bucket,
       s3Region: record.s3Region,
       s3Endpoint: record.s3Endpoint,
+      hasCredentials,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       lastConnectedAt: record.lastConnectedAt,
