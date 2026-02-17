@@ -48,6 +48,7 @@
     "@lancedb/lancedb": "^0.26.2",
     "@mancedb/dto": "workspace:*",
     "@mancedb/lancedb-core": "workspace:*",
+    "apache-arrow": "18.1.0",
     "electron-updater": "^6.7.3",
     "reflect-metadata": "^0.2.2",
     "typedi": "^0.10.0"

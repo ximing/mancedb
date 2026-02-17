@@ -65,6 +65,9 @@ importers:
       '@mancedb/lancedb-core':
         specifier: workspace:*
         version: link:../../packages/lancedb-core
+      apache-arrow:
+        specifier: 18.1.0
+        version: 18.1.0
       electron-updater:
         specifier: ^6.7.3
         version: 6.7.3
