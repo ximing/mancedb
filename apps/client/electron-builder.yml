@@ -8,8 +8,9 @@ directories:
   output: release
   buildResources: build
 files:
-  - dist/**/*
+  - dist
   - package.json
+disableDefaultIgnoredFiles: false
 # macOS Configuration
 mac:
   category: public.app-category.developer-tools
