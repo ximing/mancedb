@@ -201,6 +201,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+          architecture: arm64
 
       - name: Download packages artifacts
         uses: actions/download-artifact@v4
@@ -218,13 +219,18 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Rebuild native modules for arm64
-        run: cd apps/client && pnpm exec electron-builder install-app-deps
+        run: cd apps/client && pnpm exec electron-builder install-app-deps --arch=arm64
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
 
       - name: Build macOS arm64
-        run: pnpm --filter @mancedb/client run dist:mac
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            unset CSC_LINK
+            unset CSC_KEY_PASSWORD
+          fi
+          pnpm --filter @mancedb/client run dist:mac -- --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
