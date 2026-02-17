@@ -69,3 +69,59 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
   - Internal IPC handlers (db:connect, etc.) keep their own format - only API responses need to match
   - Always run both typecheck and lint before committing
 ---
+
+## 2026-02-17 14:30 - US-003
+- **What was implemented:**
+  - Created `ConnectionService` for Electron main process with local file persistence
+  - Implemented full connection CRUD operations in IPC router:
+    - POST /api/v1/connections - Create connection with validation
+    - GET /api/v1/connections - Get all connections
+    - GET /api/v1/connections/:id - Get single connection by ID
+    - PUT /api/v1/connections/:id - Update connection
+    - DELETE /api/v1/connections/:id - Delete connection
+    - POST /api/v1/connections/:id/test - Test connection (local and S3)
+  - Connections stored in `userData/connections.json` (app's userData directory)
+  - S3 credentials encrypted using CredentialService's safeStorage API
+  - Added duplicate name validation for create and update operations
+
+- **Files changed:**
+  - Created: `apps/client/src/main/services/connection.service.ts` (311 lines)
+  - Modified: `apps/client/src/main/ipc-router.ts` (added connection endpoints, imported ConnectionService)
+  - Modified: `ralph/prd.json` (marked US-003 as complete)
+
+- **Learnings for future iterations:**
+  - ConnectionService uses TypeDI dependency injection with CredentialService and LanceDBService
+  - Local connections store path only; S3 connections store config + encrypted credentials separately
+  - The `hasCredentials` field tracks if S3 credentials exist (not if they're valid)
+  - Connection IDs are generated using timestamp + random string format: `conn_${Date.now()}_${random}`
+  - When deleting connections, associated S3 credentials are also cleaned up
+  - TypeDI services in Electron main process are instantiated via `Container.get(ServiceName)`
+---
+
+## 2026-02-17 15:45 - US-004
+- **What was implemented:**
+  - Added `POST /api/v1/tables` endpoint to create new tables with column definitions
+  - Added `GET /api/v1/tables/:name/count` endpoint to get table row count
+  - Added `createTable()` method to LanceDBService for creating empty tables with schema
+  - Added `getTableCount()` method to LanceDBService for getting row counts
+  - Implemented validation for table names (alphanumeric + underscore, must start with letter/underscore)
+  - Implemented validation for column definitions (name, type required)
+
+- **Files changed:**
+  - Modified: `apps/client/src/main/ipc-router.ts` (added POST /tables and GET /tables/:name/count handlers)
+  - Modified: `apps/client/src/main/services/lancedb.service.ts` (added createTable and getTableCount methods)
+  - Modified: `ralph/prd.json` (marked US-004 as complete)
+
+- **Key findings:**
+  - The PRD requirements mentioned `/api/v1/database/tables` paths, but the actual server and web app use `/api/v1/tables`
+  - Most table management endpoints were already implemented in previous iterations
+  - LanceDB's TableManager already has `createEmptyTable()` method which is perfect for the create table endpoint
+  - Table row count is available via `table.countRows()` in LanceDB SDK
+
+- **Learnings for future iterations:**
+  - The TableManager in lancedb-core already provides most needed functionality
+  - Table creation requires column definitions with name, type, and optional nullable flag
+  - Supported column types: int64, int32, int, float64, float32, float, string, utf8, binary, bool, boolean
+  - The IPC router pattern for table endpoints uses regex matching for dynamic routes
+  - Always validate table/column names to match LanceDB naming conventions
+---

@@ -166,6 +166,56 @@ export class LanceDBService {
   }
 
   /**
+   * Create a new table
+   */
+  async createTable(
+    tableName: string,
+    columns: Array<{ name: string; type: string; nullable?: boolean }>,
+    dbPath?: string
+  ): Promise<{ name: string; created: boolean }> {
+    const uri = dbPath || this.getActiveUri();
+
+    // Check if table already exists
+    const exists = await this.tableManager.tableExists(uri, tableName);
+    if (exists) {
+      throw new Error(`Table '${tableName}' already exists`);
+    }
+
+    // Validate table name format
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+      throw new Error(
+        'Table name must start with letter or underscore and contain only letters, numbers, and underscores'
+      );
+    }
+
+    // Create empty table with schema
+    await this.tableManager.createEmptyTable(uri, tableName, columns);
+
+    return {
+      name: tableName,
+      created: true,
+    };
+  }
+
+  /**
+   * Get table row count
+   */
+  async getTableCount(tableName: string, dbPath?: string): Promise<{ count: number }> {
+    const uri = dbPath || this.getActiveUri();
+
+    // Check if table exists
+    const exists = await this.tableManager.tableExists(uri, tableName);
+    if (!exists) {
+      throw new Error(`Table '${tableName}' not found`);
+    }
+
+    const table = await this.tableManager.getTable(uri, tableName);
+    const count = await table.countRows();
+
+    return { count };
+  }
+
+  /**
    * Get table schema
    */
   async getTableSchema(tableName: string, dbPath?: string): Promise<TableSchema> {

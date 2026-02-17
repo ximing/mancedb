@@ -48,8 +48,8 @@
         "Verify in Electron client"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created ConnectionService with local file persistence. All 6 connection endpoints implemented: POST/GET /connections, GET/PUT/DELETE /connections/:id, POST /connections/:id/test. Connections stored in userData/connections.json, S3 credentials encrypted via CredentialService."
     },
     {
       "id": "US-004",
@@ -65,8 +65,8 @@
         "Verify in Electron client"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added missing table management endpoints. 1) POST /api/v1/tables - Create table with column definitions, 2) GET /api/v1/tables/:name/count - Get row count. Note: Server uses /api/v1/tables not /api/v1/database/tables for these operations. Existing endpoints (GET /tables, GET /tables/:name/schema, DELETE /tables/:name) were already implemented."
     },
     {
       "id": "US-005",

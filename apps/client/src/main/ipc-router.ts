@@ -140,6 +140,72 @@ async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any
       return successResponse(result);
     }
 
+    // Create table endpoint - POST /api/v1/tables
+    if (endpoint === '/api/v1/tables' && method === 'POST') {
+      try {
+        const { name, columns } = data as {
+          name: string;
+          columns: Array<{ name: string; type: string; nullable?: boolean }>;
+        };
+
+        // Validate required fields
+        if (!name || !name.trim()) {
+          return errorResponse(ErrorCode.PARAMS_ERROR, 'Table name is required');
+        }
+
+        if (!columns || !Array.isArray(columns) || columns.length === 0) {
+          return errorResponse(ErrorCode.PARAMS_ERROR, 'At least one column is required');
+        }
+
+        // Validate column definitions
+        for (const col of columns) {
+          if (!col.name || !col.name.trim()) {
+            return errorResponse(ErrorCode.PARAMS_ERROR, 'Column name is required for all columns');
+          }
+          if (!col.type) {
+            return errorResponse(ErrorCode.PARAMS_ERROR, `Column type is required for column '${col.name}'`);
+          }
+          // Validate column name format
+          if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(col.name)) {
+            return errorResponse(
+              ErrorCode.PARAMS_ERROR,
+              `Column name '${col.name}' must start with letter or underscore and contain only letters, numbers, and underscores`
+            );
+          }
+        }
+
+        const result = await lancedbService.createTable(name.trim(), columns);
+        return successResponse(result, 'Table created successfully');
+      } catch (error) {
+        logError('Create table error', error);
+        if (error instanceof Error) {
+          if (error.message.includes('already exists')) {
+            return errorResponse(ErrorCode.PARAMS_ERROR, error.message);
+          }
+          if (error.message.includes('Table name must start with')) {
+            return errorResponse(ErrorCode.PARAMS_ERROR, error.message);
+          }
+        }
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to create table');
+      }
+    }
+
+    // Get table count endpoint - GET /api/v1/tables/:name/count
+    const tableCountMatch = endpoint.match(/^\/api\/v1\/tables\/([^/]+)\/count$/);
+    if (tableCountMatch && method === 'GET') {
+      try {
+        const tableName = decodeURIComponent(tableCountMatch[1]);
+        const result = await lancedbService.getTableCount(tableName);
+        return successResponse(result);
+      } catch (error) {
+        logError('Get table count error', error, { tableName: tableCountMatch?.[1] });
+        if (error instanceof Error && error.message.includes('not found')) {
+          return errorResponse(ErrorCode.NOT_FOUND, error.message);
+        }
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to get table count');
+      }
+    }
+
     // Table endpoints
     const tableSchemaMatch = endpoint.match(/^\/api\/v1\/tables\/([^/]+)\/schema$/);
     if (tableSchemaMatch && method === 'GET') {
