@@ -87,8 +87,6 @@ appImage:
   artifactName: ${productName}-${version}-${arch}.${ext}
 deb:
   artifactName: ${productName}-${version}-${arch}.${ext}
-  fpm:
-    - --deb-homepage=https://github.com/mancedb/mancedb
 # Publish Configuration (optional - only used during CI/CD)
 # publish:
 #   provider: github
