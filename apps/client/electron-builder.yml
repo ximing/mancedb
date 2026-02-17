@@ -3,6 +3,7 @@
 
 appId: com.mancedb.client
 productName: ManceDB
+homepage: https://github.com/mancedb/mancedb
 copyright: Copyright © 2026 ManceDB
 directories:
   output: release
