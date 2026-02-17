@@ -12,6 +12,7 @@ import { ipcMain } from 'electron';
 import { Container } from 'typedi';
 import { LanceDBService } from './services/lancedb.service';
 import { CredentialService } from './services/credential.service';
+import { ConnectionService } from './services/connection.service';
 import type { FilterCondition } from '@mancedb/dto';
 import type { S3Config } from './services/credential.service';
 
@@ -108,6 +109,13 @@ function getLanceDBService(): LanceDBService {
  */
 function getCredentialService(): CredentialService {
   return Container.get(CredentialService);
+}
+
+/**
+ * Get the ConnectionService instance from the DI container
+ */
+function getConnectionService(): ConnectionService {
+  return Container.get(ConnectionService);
 }
 
 /**
@@ -214,23 +222,168 @@ async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any
       return successResponse({ history: [] });
     }
 
-    // Connection endpoints (for local mode, these are simplified)
+    // Connection endpoints
     if (endpoint === '/api/v1/connections' && method === 'GET') {
-      // Return a single local connection
-      return successResponse([{
-        id: 'local',
-        name: 'Local Database',
-        type: 'local',
-        path: 'Connected via file dialog',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }]);
+      const connectionService = getConnectionService();
+      const connections = await connectionService.getAllConnections();
+      return successResponse(connections);
+    }
+
+    if (endpoint === '/api/v1/connections' && method === 'POST') {
+      const connectionService = getConnectionService();
+      try {
+        const { name, type, localPath, s3Bucket, s3Region, s3AccessKey, s3SecretKey, s3Endpoint, s3Prefix } = data as {
+          name: string;
+          type: 'local' | 's3';
+          localPath?: string;
+          s3Bucket?: string;
+          s3Region?: string;
+          s3AccessKey?: string;
+          s3SecretKey?: string;
+          s3Endpoint?: string;
+          s3Prefix?: string;
+        };
+
+        // Validate required fields
+        if (!name || !type) {
+          return errorResponse(ErrorCode.PARAMS_ERROR, 'Name and type are required');
+        }
+
+        // Validate type
+        if (type !== 'local' && type !== 's3') {
+          return errorResponse(ErrorCode.PARAMS_ERROR, 'Type must be "local" or "s3"');
+        }
+
+        // Validate type-specific fields
+        if (type === 'local' && !localPath) {
+          return errorResponse(ErrorCode.PARAMS_ERROR, 'Local path is required for local connections');
+        }
+
+        if (type === 's3') {
+          if (!s3Bucket || !s3Region) {
+            return errorResponse(ErrorCode.PARAMS_ERROR, 'S3 bucket and region are required for S3 connections');
+          }
+        }
+
+        const connection = await connectionService.createConnection({
+          name,
+          type,
+          localPath,
+          s3Bucket,
+          s3Region,
+          s3AccessKey,
+          s3SecretKey,
+          s3Endpoint,
+          s3Prefix,
+        });
+
+        return successResponse(connection);
+      } catch (error) {
+        logError('Create connection error', error);
+        if (error instanceof Error && error.message.includes('already exists')) {
+          return errorResponse(ErrorCode.PARAMS_ERROR, error.message);
+        }
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to create connection');
+      }
+    }
+
+    const connectionGetMatch = endpoint.match(/^\/api\/v1\/connections\/([^/]+)$/);
+    if (connectionGetMatch && method === 'GET') {
+      const connectionService = getConnectionService();
+      const id = decodeURIComponent(connectionGetMatch[1]);
+
+      try {
+        const connection = await connectionService.getConnectionById(id);
+        if (!connection) {
+          return errorResponse(ErrorCode.NOT_FOUND, 'Connection not found');
+        }
+        return successResponse(connection);
+      } catch (error) {
+        logError('Get connection by ID error', error, { id });
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to get connection');
+      }
+    }
+
+    if (connectionGetMatch && method === 'PUT') {
+      const connectionService = getConnectionService();
+      const id = decodeURIComponent(connectionGetMatch[1]);
+
+      try {
+        const { name, type, localPath, s3Bucket, s3Region, s3AccessKey, s3SecretKey, s3Endpoint, s3Prefix } = data as {
+          name?: string;
+          type?: 'local' | 's3';
+          localPath?: string;
+          s3Bucket?: string;
+          s3Region?: string;
+          s3AccessKey?: string;
+          s3SecretKey?: string;
+          s3Endpoint?: string;
+          s3Prefix?: string;
+        };
+
+        // Validate type if provided
+        if (type && type !== 'local' && type !== 's3') {
+          return errorResponse(ErrorCode.PARAMS_ERROR, 'Type must be "local" or "s3"');
+        }
+
+        const connection = await connectionService.updateConnection(id, {
+          name,
+          type,
+          localPath,
+          s3Bucket,
+          s3Region,
+          s3AccessKey,
+          s3SecretKey,
+          s3Endpoint,
+          s3Prefix,
+        });
+
+        if (!connection) {
+          return errorResponse(ErrorCode.NOT_FOUND, 'Connection not found');
+        }
+
+        return successResponse(connection);
+      } catch (error) {
+        logError('Update connection error', error, { id });
+        if (error instanceof Error && error.message.includes('already exists')) {
+          return errorResponse(ErrorCode.PARAMS_ERROR, error.message);
+        }
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to update connection');
+      }
+    }
+
+    if (connectionGetMatch && method === 'DELETE') {
+      const connectionService = getConnectionService();
+      const id = decodeURIComponent(connectionGetMatch[1]);
+
+      try {
+        const success = await connectionService.deleteConnection(id);
+        if (!success) {
+          return errorResponse(ErrorCode.NOT_FOUND, 'Connection not found');
+        }
+        return successResponse({ deleted: true });
+      } catch (error) {
+        logError('Delete connection error', error, { id });
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to delete connection');
+      }
     }
 
     const connectionTestMatch = endpoint.match(/^\/api\/v1\/connections\/([^/]+)\/test$/);
     if (connectionTestMatch && method === 'POST') {
-      // Local connection is always "connected" if we have a path
-      return successResponse({ success: true, message: 'Local database connected' });
+      const connectionService = getConnectionService();
+      const id = decodeURIComponent(connectionTestMatch[1]);
+
+      try {
+        const result = await connectionService.testConnection(id);
+        if (result.success) {
+          return successResponse(result);
+        } else {
+          return errorResponse(ErrorCode.DB_CONNECT_ERROR, result.message);
+        }
+      } catch (error) {
+        logError('Test connection error', error, { id });
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to test connection');
+      }
     }
 
     // Auth endpoints - authentication removed, return error
