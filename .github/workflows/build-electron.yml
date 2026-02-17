@@ -126,7 +126,7 @@ jobs:
 
   # macOS Intel (x64) build
   build-macos-x64:
-    runs-on: macos-12
+    runs-on: macos-13
     needs: [build-packages, build-web, quality-checks]
     steps:
       - name: Checkout code
@@ -157,6 +157,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Rebuild native modules for x64
+        run: cd apps/client && pnpm exec electron-builder install-app-deps
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
@@ -213,6 +216,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Rebuild native modules for arm64
+        run: cd apps/client && pnpm exec electron-builder install-app-deps
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
