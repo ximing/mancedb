@@ -5,10 +5,11 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
 ## Codebase Patterns
 - The Electron IPC router uses a simple if/else routing pattern in `ipc-router.ts`
 - Server controllers use `routing-controllers` decorators but IPC router uses manual pattern matching
-- Error responses follow format: `{ code: number, data: T, message?: string }`
+- Error responses follow format: `{ code: number, data: T, msg: string }` (UPDATED: was `message?`, now matches server)
 - Server uses `ResponseUtil.success/error` - IPC router uses `successResponse/errorResponse` helpers
 - TypeDI is used for dependency injection in both server and client
 - LanceDBService in Electron wraps `@mancedb/lancedb-core` services
+- IPC router ErrorCode constants match server error-codes.ts (0=success, 1=system error, 2=params error, etc.)
 
 ## 2026-02-17 10:30 - US-001
 - **What was implemented:**
@@ -30,7 +31,41 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
 - **Learnings for future iterations:**
   - Connection management in Electron needs local persistence (electron-store or JSON file)
   - Auth endpoints should mirror server behavior (return disabled/anon user)
-  - Error handling pattern: IPC uses `errorResponse(msg, code)` vs Server's `ResponseUtil.error(code, msg)` - note parameter order difference!
+  - ~~Error handling pattern: IPC uses `errorResponse(msg, code)` vs Server's `ResponseUtil.error(code, msg)`~~ FIXED in US-002
   - The IPC router already has good pattern matching for dynamic routes using regex
   - LanceDBService already implements most table operations - just needs connection CRUD
+---
+
+## 2026-02-17 11:15 - US-002
+- **What was implemented:**
+  - Unified error handling and response format between IPC router and server
+  - Changed APIResponse interface from `{ code, data, message? }` to `{ code, data, msg }` to match server
+  - Added ErrorCode constants (SUCCESS, SYSTEM_ERROR, PARAMS_ERROR, NOT_FOUND, etc.) matching server
+  - Added ErrorMessage mapping for consistent error messages
+  - Created structured `logError()` function for error logging with timestamps, stack traces, and context
+  - Updated `errorResponse()` parameter order from `(message, code)` to `(code, msg)` to match server
+  - Updated `successResponse()` to always include `msg` field with default "操作成功"
+  - Updated all error response calls to use proper ErrorCode constants
+  - Added error logging to db:connect and db:connectS3 handlers
+
+- **Files changed:**
+  - Modified: `apps/client/src/main/ipc-router.ts`
+  - Modified: `ralph/prd.json` (marked US-002 as complete)
+
+- **Key changes in ipc-router.ts:**
+  - Added ErrorCode and ErrorMessage constants (lines 34-58)
+  - Added logError() helper function (lines 60-73)
+  - Updated successResponse() to include msg field (lines 75-85)
+  - Updated errorResponse() parameter order (lines 87-97)
+  - Updated auth endpoints to use ErrorCode.FORBIDDEN (lines 237-251)
+  - Updated 404 handler to use ErrorCode.NOT_FOUND (line 261)
+  - Updated catch block to use logError() and ErrorCode.SYSTEM_ERROR (lines 263-268)
+  - Added logError to db:connect handler (line 291)
+  - Added logError to db:connectS3 handler (line 343)
+
+- **Learnings for future iterations:**
+  - IPC router now uses same response format as server: `{ code, data, msg }`
+  - Error codes are defined locally in the file to avoid cross-package dependencies
+  - Internal IPC handlers (db:connect, etc.) keep their own format - only API responses need to match
+  - Always run both typecheck and lint before committing
 ---
