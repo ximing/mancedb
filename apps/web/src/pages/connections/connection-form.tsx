@@ -311,21 +311,11 @@ export const ConnectionFormPage = view(() => {
       if (!formData.s3Region?.trim()) {
         newErrors.s3Region = 'S3 region is required';
       }
-      // Only require access key/secret on create, not on edit
-      if (!isEditMode) {
-        if (!formData.s3AccessKey?.trim()) {
-          newErrors.s3AccessKey = 'Access key is required';
-        }
-        if (!formData.s3SecretKey?.trim()) {
-          newErrors.s3SecretKey = 'Secret key is required';
-        }
-      }
+      // Access key and secret key are optional (support for public S3 buckets)
+      // No validation required
     }
 
-    // Password is required on create, optional on edit
-    if (!isEditMode && !formData.dbPassword?.trim()) {
-      newErrors.dbPassword = 'Password is required';
-    }
+    // Password is optional for database authentication
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -568,9 +558,8 @@ export const ConnectionFormPage = view(() => {
                       value={formData.s3AccessKey || ''}
                       onChange={(value) => updateField('s3AccessKey', value)}
                       placeholder="AKIA..."
-                      required={!isEditMode}
                       error={errors.s3AccessKey}
-                      helpText={isEditMode ? 'Leave blank to keep existing' : undefined}
+                      helpText={isEditMode ? 'Leave blank to keep existing' : 'Optional for public S3 buckets'}
                     />
                     <FormField
                       label="Secret Key"
@@ -579,9 +568,8 @@ export const ConnectionFormPage = view(() => {
                       value={formData.s3SecretKey || ''}
                       onChange={(value) => updateField('s3SecretKey', value)}
                       placeholder="••••••••"
-                      required={!isEditMode}
                       error={errors.s3SecretKey}
-                      helpText={isEditMode ? 'Leave blank to keep existing' : undefined}
+                      helpText={isEditMode ? 'Leave blank to keep existing' : 'Optional for public S3 buckets'}
                     />
                   </div>
                 </div>
@@ -610,9 +598,8 @@ export const ConnectionFormPage = view(() => {
                 value={formData.dbPassword || ''}
                 onChange={(value) => updateField('dbPassword', value)}
                 placeholder="••••••••"
-                required={!isEditMode}
                 error={errors.dbPassword}
-                helpText={isEditMode ? 'Leave blank to keep existing password' : 'Password for database authentication'}
+                helpText={isEditMode ? 'Leave blank to keep existing password' : 'Optional password for database authentication'}
               />
             </div>
           </section>

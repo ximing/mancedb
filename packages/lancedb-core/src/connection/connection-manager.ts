@@ -62,7 +62,11 @@ interface ConnectionEntry {
  */
 @Service()
 export class ConnectionManager {
-  private connections: Map<string, ConnectionEntry> = new Map();
+  private connections: Map<string, ConnectionEntry>;
+
+  constructor() {
+    this.connections = new Map();
+  }
 
   /**
    * Connect to a LanceDB database

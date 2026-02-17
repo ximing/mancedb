@@ -4,7 +4,7 @@
  * Uses TypeDI for dependency injection and lancedb-core for shared functionality
  */
 
-import { Service, Inject } from 'typedi';
+import { Service, Container } from 'typedi';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
@@ -51,13 +51,18 @@ interface ConnectionState {
 @Service()
 export class LanceDBService {
   private activeConnection: ConnectionState | null = null;
+  private connectionManager: ConnectionManager;
+  private tableManager: TableManager;
+  private queryEngine: QueryEngine;
+  private schemaManager: SchemaManager;
 
-  constructor(
-    @Inject(() => ConnectionManager) private connectionManager: ConnectionManager,
-    @Inject(() => TableManager) private tableManager: TableManager,
-    @Inject(() => QueryEngine) private queryEngine: QueryEngine,
-    @Inject(() => SchemaManager) private schemaManager: SchemaManager
-  ) {}
+  constructor() {
+    // Get services from container directly to avoid decorator issues
+    this.connectionManager = Container.get(ConnectionManager);
+    this.tableManager = Container.get(TableManager);
+    this.queryEngine = Container.get(QueryEngine);
+    this.schemaManager = Container.get(SchemaManager);
+  }
 
   /**
    * Connect to a LanceDB database
@@ -353,7 +358,7 @@ export class LanceDBService {
           return { success: false, message: `Path is not a directory: ${dbPath}` };
         }
       }
-
+      console.warn('this.connectionManager',this.connectionManager)
       // Try to connect
       const connection = await this.connectionManager.connect(dbPath);
       const tableNames = await connection.tableNames();

@@ -1,132 +1,84 @@
 {
   "project": "ManceDB",
-  "branchName": "ralph/remove-authentication",
-  "description": "移除账号认证系统 - 用户打开应用后直接进入数据库连接界面，无需登录注册",
+  "branchName": "ralph/optional-connection-credentials",
+  "description": "数据库连接凭证可选 - 支持无账号密码的本地数据库和S3公开桶连接",
   "userStories": [
     {
       "id": "US-001",
-      "title": "移除 Server 端 JWT 认证中间件",
-      "description": "作为开发者，我需要移除或可选化 JWT 认证，使得 API 可以在无认证状态下访问。",
+      "title": "后端 DTO 移除凭证必填验证",
+      "description": "作为开发者，我需要让后端接受无凭证的连接配置。",
       "acceptanceCriteria": [
-        "移除 AuthMiddleware 或将其改为可配置开关",
-        "移除 CurrentUser 装饰器及相关注入",
-        "更新 routing-controllers 配置，移除全局认证中间件",
-        "移除 JWT_SECRET 环境变量的强制要求",
-        "所有 API 端点可在无 token 状态下正常访问",
+        "在 CreateConnectionDto 中将 accessKeyId 字段标记为 @IsOptional()",
+        "在 CreateConnectionDto 中将 secretAccessKey 字段标记为 @IsOptional()",
+        "在 UpdateConnectionDto 中同样移除凭证必填验证",
+        "确保空字符串和 undefined 都被接受为有效值",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Removed authHandler from app.ts, removed CurrentUser decorator, made JWT_SECRET optional, typecheck passes"
+      "notes": "Converted interfaces to classes with @IsOptional() decorators on s3AccessKey, s3SecretKey, and all other optional fields"
     },
     {
       "id": "US-002",
-      "title": "移除 Server 端用户相关数据库表",
-      "description": "作为开发者，我需要移除用户相关的数据库表和迁移脚本。",
+      "title": "连接服务支持空凭证",
+      "description": "作为开发者，我需要确保 LanceDB/S3 连接逻辑能正确处理空凭证。",
       "acceptanceCriteria": [
-        "移除 users 表及相关索引",
-        "移除用户相关的迁移脚本（003-admin-tables.ts 中的用户部分）",
-        "确保数据库启动时不报错",
-        "保留其他必要的系统表（如连接配置表）",
+        "检查 ConnectionManager 创建 S3 连接时的凭证处理逻辑",
+        "确保空凭证时正确创建匿名 S3 客户端或本地连接",
+        "验证非空凭证时原有功能不受影响",
+        "添加空凭证场景的错误处理和提示",
         "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Completed: Removed usersSchema and UserRecord, replaced usersTableMigration with tableMigrationsMigration, removed users indexes, typecheck passes"
+      "notes": "Modified ConnectionService.testConnection() and DatabaseService.connectToDatabase() to support empty S3 credentials. ConnectionManager already handles empty credentials correctly."
     },
     {
       "id": "US-003",
-      "title": "移除 Server 端用户服务和控制器",
-      "description": "作为开发者，我需要移除用户相关的服务和控制器代码。",
+      "title": "前端表单移除凭证必填验证",
+      "description": "作为用户，我可以在创建连接时不填写账号密码。",
       "acceptanceCriteria": [
-        "删除 UserService 及相关 DTO",
-        "删除 AuthController 中的登录/注册/登出接口",
-        "从 Container 中移除用户服务注册",
-        "清理 AuthService 中 JWT 相关逻辑",
-        "确保其他控制器不依赖用户上下文",
-        "Typecheck passes"
+        "找到连接创建/编辑表单组件",
+        "移除账号字段的必填验证规则",
+        "移除密码字段的必填验证规则",
+        "确保表单提交时允许空值",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Completed: Deleted UserService and user.schema, simplified AuthController and UserController, removed JWT logic from ConnectionAuthService, removed bcrypt from ConnectionService, removed dbUsername/dbPasswordHash fields, typecheck passes"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "调整 Web 端路由和路由守卫",
-      "description": "作为用户，我打开 Web 应用后应该直接进入连接管理页面，不需要登录。",
+      "title": "前端表单添加可选标注",
+      "description": "作为用户，我能清楚知道账号密码是可选填写的。",
       "acceptanceCriteria": [
-        "移除 AuthGuard 组件或使其自动通过",
-        "更新路由配置：默认路由改为 /connections",
-        "移除 /auth 路由及相关页面",
-        "移除 useAuth hook 或简化其实现",
-        "确保无需登录即可访问所有功能页面",
+        "在账号输入框标签后添加 (可选) 标注",
+        "在密码输入框标签后添加 (可选) 标注",
+        "添加提示文字说明何时需要填写（如 S3 非公开桶）",
+        "保持现有表单的样式一致性",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Completed: Simplified ProtectedRoute, updated App.tsx routing, simplified AuthService, updated startup-mode.tsx navigation"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "移除 Web 端登录/注册页面",
-      "description": "作为用户，我不需要看到登录和注册界面。",
+      "title": "连接列表显示凭证状态",
+      "description": "作为用户，我能在连接列表中看出哪些连接有凭证、哪些没有。",
       "acceptanceCriteria": [
-        "删除 auth.tsx 登录页面",
-        "删除 startup-mode.tsx 中的登录相关 UI",
-        "移除登录表单组件",
-        "清理相关样式和国际化文案",
+        "在连接列表项或详情中显示凭证状态（有/无）",
+        "使用图标或标签直观展示",
+        "不影响列表的现有功能和布局",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Completed: Deleted auth.tsx, login-form.tsx, register-form.tsx, and auth/index.tsx. Removed entire apps/web/src/pages/auth/ directory. Typecheck passes."
-    },
-    {
-      "id": "US-006",
-      "title": "清理 Web 端认证状态管理",
-      "description": "作为开发者，我需要清理前端认证相关的状态管理代码。",
-      "acceptanceCriteria": [
-        "移除 authStore 或简化其为空实现",
-        "移除 localStorage 中的 token 存储逻辑",
-        "更新 API client，移除 token 注入逻辑",
-        "清理 Authorization header 相关代码",
-        "确保 API 调用正常工作",
-        "Typecheck passes"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": "Completed: Removed token logic from api-client.ts and request.ts, cleaned up AuthService, typecheck passes"
-    },
-    {
-      "id": "US-007",
-      "title": "调整 Client (Electron) 启动流程",
-      "description": "作为桌面应用用户，我打开应用后应该直接看到连接管理界面。",
-      "acceptanceCriteria": [
-        "移除主进程中登录窗口相关代码",
-        "调整启动窗口逻辑：直接加载连接页面",
-        "移除 IPC 中认证相关的通道",
-        "确保应用启动时无需等待认证",
-        "Typecheck passes"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "Completed: Updated ipc-router.ts auth endpoints to return error (authentication disabled), startup flow already goes directly to connections page"
-    },
-    {
-      "id": "US-008",
-      "title": "更新环境变量配置文档",
-      "description": "作为部署者，我需要了解新的环境变量要求。",
-      "acceptanceCriteria": [
-        "更新 ENVIRONMENT.md，移除 JWT_SECRET 必需标记",
-        "更新 .env.example 文件",
-        "更新 README 中的快速开始指南",
-        "文档说明应用现在无需认证即可使用"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "Completed: Updated ENVIRONMENT.md, .env.example, and README.md to remove JWT_SECRET requirement and document that authentication is disabled"
+      "passes": false,
+      "notes": ""
     }
   ]
 }

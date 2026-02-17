@@ -2,7 +2,7 @@
 # https://www.electron.build/configuration/configuration
 
 appId: com.mancedb.client
-productName: LanceDB Admin
+productName: ManceDB
 copyright: Copyright © 2026 ManceDB
 directories:
   output: release
@@ -60,8 +60,8 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: always
   createStartMenuShortcut: true
-  shortcutName: LanceDB Admin
-  uninstallDisplayName: LanceDB Admin
+  shortcutName: ManceDB
+  uninstallDisplayName: ManceDB
   include: build/installer.nsh
 msi:
   createDesktopShortcut: true
@@ -79,11 +79,11 @@ linux:
   icon: build/icons
   maintainer: ManceDB
   vendor: ManceDB
-  synopsis: LanceDB Admin Desktop Client
+  synopsis: ManceDB Desktop Client
   description: Desktop client for managing LanceDB databases
   desktop:
-    Name: LanceDB Admin
-    Comment: LanceDB Database Administration Tool
+    Name: ManceDB
+    Comment: ManceDB Database Administration Tool
     Categories: Development;Database;
 appImage:
   artifactName: ${name}-${version}-${arch}.${ext}

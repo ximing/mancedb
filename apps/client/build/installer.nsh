@@ -1,4 +1,4 @@
-; NSIS Installer Script for LanceDB Admin
+; NSIS Installer Script for ManceDB
 ; This script is included by electron-builder during Windows installer creation
 
 !macro customInit
@@ -13,6 +13,6 @@
 !macro customUnInstall
   ; Clean up user data on uninstall (optional)
   ; MessageBox MB_YESNO "Remove user data and settings?" IDNO skipRemoval
-  ; RMDir /r "$APPDATA\LanceDB Admin"
+  ; RMDir /r "$APPDATA\ManceDB"
   ; skipRemoval:
 !macroend

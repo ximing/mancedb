@@ -1,6 +1,6 @@
 /**
  * Migration v3: Create admin tables (connections and query_history)
- * Creates tables for the LanceDB Admin tool
+ * Creates tables for the ManceDB tool
  */
 
 import type { Connection } from '@lancedb/lancedb';

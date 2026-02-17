@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- DTO Validation Pattern: Use class-validator decorators (@IsOptional, @IsString) with classes instead of plain interfaces for request DTOs
 - TypeDI Dependency Injection: Import 'reflect-metadata' at the top of main entry file before any other imports
 - TypeDI Service Registration: Use dynamic imports in initContainer() to trigger @Service() decorators
 - Electron Main Process DI: Initialize container in app.whenReady() before registering IPC handlers
@@ -21,6 +22,39 @@
 - Token Removal Pattern: Check both api-client.ts (fetch-based) and request.ts (axios-based) for token injection logic
 - Electron Auth Removal Pattern: IPC router auth endpoints should return error (403) when authentication is disabled, keeping only logout as no-op for compatibility
 - Documentation Update Pattern: When removing auth, update ENVIRONMENT.md, .env.example, and README.md to reflect that authentication is no longer required
+- S3 Empty Credentials Pattern: ConnectionManager.createS3Connection already handles empty credentials by only adding them to storageOptions when present (supports public S3 buckets)
+
+---
+
+## 2026-02-17 - US-002 (Optional Connection Credentials)
+- Modified ConnectionService.testConnection() to support empty S3 credentials
+- Modified DatabaseService.connectToDatabase() to support empty S3 credentials
+- Credentials are now optional for S3 connections (supports public S3 buckets)
+- ConnectionManager.createS3Connection already handles empty credentials correctly
+- lancedb-core and client packages typecheck pass
+- Server has pre-existing type errors from auth removal (unrelated to this change)
+
+**Learnings for future iterations:**
+- ConnectionManager.createS3Connection only adds credentials to storageOptions if they are present
+- Empty strings and undefined are treated as "no credentials" and work for public S3 buckets
+- Both server services (ConnectionService and DatabaseService) needed updates to remove the credential requirement
+- The LanceDB SDK will use AWS default credential chain when no explicit credentials are provided
+
+---
+
+## 2026-02-17 - US-001 (Optional Connection Credentials)
+- Converted CreateConnectionDto and UpdateConnectionDto from interfaces to classes in packages/dto/src/connection.ts
+- Added @IsOptional() decorator to s3AccessKey and s3SecretKey fields
+- Added @IsOptional() and @IsString() decorators to all optional fields for consistency
+- Imported class-validator decorators for validation support
+- Typecheck passes for dto package and web package
+- Lint has pre-existing eslint-plugin-turbo issue (not related to changes)
+
+**Learnings for future iterations:**
+- DTOs in packages/dto should use class-validator decorators for proper validation
+- Use @IsOptional() to make fields optional in class-validator validated classes
+- Both empty strings and undefined are accepted as valid values when using @IsOptional()
+- Server package has pre-existing type errors from auth removal (unrelated to this change)
 
 ---
 
