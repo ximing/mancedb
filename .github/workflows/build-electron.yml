@@ -24,13 +24,9 @@ jobs:
 
       - name: Use official npm registry
         run: |
-          cat > .npmrc <<'EOF'
-          registry=https://registry.npmjs.org/
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
-          cat > apps/client/.npmrc <<'EOF'
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -71,13 +67,9 @@ jobs:
 
       - name: Use official npm registry
         run: |
-          cat > .npmrc <<'EOF'
-          registry=https://registry.npmjs.org/
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
-          cat > apps/client/.npmrc <<'EOF'
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -120,13 +112,9 @@ jobs:
 
       - name: Use official npm registry
         run: |
-          cat > .npmrc <<'EOF'
-          registry=https://registry.npmjs.org/
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
-          cat > apps/client/.npmrc <<'EOF'
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -164,13 +152,9 @@ jobs:
 
       - name: Use official npm registry
         run: |
-          cat > .npmrc <<'EOF'
-          registry=https://registry.npmjs.org/
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
-          cat > apps/client/.npmrc <<'EOF'
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -233,13 +217,9 @@ jobs:
 
       - name: Use official npm registry
         run: |
-          cat > .npmrc <<'EOF'
-          registry=https://registry.npmjs.org/
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
-          cat > apps/client/.npmrc <<'EOF'
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -308,13 +288,9 @@ jobs:
 
       - name: Use official npm registry
         run: |
-          cat > .npmrc <<'EOF'
-          registry=https://registry.npmjs.org/
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
-          cat > apps/client/.npmrc <<'EOF'
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -374,13 +350,9 @@ jobs:
 
       - name: Use official npm registry
         run: |
-          cat > .npmrc <<'EOF'
-          registry=https://registry.npmjs.org/
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
-          cat > apps/client/.npmrc <<'EOF'
-          @lancedb:registry=https://registry.npmjs.org/
-          EOF
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
