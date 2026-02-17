@@ -189,7 +189,12 @@ jobs:
         run: pnpm --filter @mancedb/client build:electron
 
       - name: Build macOS x64
-        run: pnpm --filter @mancedb/client run dist:mac -- --x64
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            unset CSC_LINK
+            unset CSC_KEY_PASSWORD
+          fi
+          pnpm --filter @mancedb/client run dist:mac -- --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
