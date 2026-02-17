@@ -143,9 +143,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Download packages artifacts
         uses: actions/download-artifact@v4
         with:
@@ -157,6 +154,9 @@ jobs:
         with:
           name: web-dist
           path: apps/client/dist/web
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
@@ -199,9 +199,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Download packages artifacts
         uses: actions/download-artifact@v4
         with:
@@ -213,6 +210,9 @@ jobs:
         with:
           name: web-dist
           path: apps/client/dist/web
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
