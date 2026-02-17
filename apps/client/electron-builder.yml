@@ -28,6 +28,8 @@ mac:
   gatekeeperAssess: false
   sign: null
   notarize: null
+  # Ensure native dependencies are properly handled for all architectures
+  buildDependsOnLocal: true
 dmg:
   contents:
     - x: 130
