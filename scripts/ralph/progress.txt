@@ -10,6 +10,9 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
 - TypeDI is used for dependency injection in both server and client
 - LanceDBService in Electron wraps `@mancedb/lancedb-core` services
 - IPC router ErrorCode constants match server error-codes.ts (0=success, 1=system error, 2=params error, etc.)
+- LanceDB table operations: `table.add(data)` for insert, `table.delete(where)` for delete (no direct update, use delete+insert)
+- Common ID column names tried in order: 'id', '_id', 'row_id', 'pk'
+- Vector search endpoint not implemented because web app doesn't use it (future enhancement if needed)
 
 ## 2026-02-17 10:30 - US-001
 - **What was implemented:**
@@ -96,6 +99,38 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
   - Connection IDs are generated using timestamp + random string format: `conn_${Date.now()}_${random}`
   - When deleting connections, associated S3 credentials are also cleaned up
   - TypeDI services in Electron main process are instantiated via `Container.get(ServiceName)`
+---
+
+## 2026-02-17 16:30 - US-005
+- **What was implemented:**
+  - Enhanced POST /api/v1/query endpoint with proper parameter validation and error handling
+  - Improved GET /api/v1/query/history endpoint to parse limit parameter (returns empty array as query history is not persisted in Electron mode)
+  - Implemented POST /api/v1/tables/:name/data endpoint for inserting data into tables
+  - Implemented PUT /api/v1/tables/:name/data/:id endpoint for updating data by ID
+  - Added insertData() method to LanceDBService using table.add() API
+  - Added updateData() method to LanceDBService (delete old row + insert updated row pattern)
+  - Added recordToObject() helper method for converting LanceDB records to plain objects
+
+- **Files changed:**
+  - Modified: `apps/client/src/main/ipc-router.ts` (added insert/update endpoints, enhanced query endpoint)
+  - Modified: `apps/client/src/main/services/lancedb.service.ts` (added insertData, updateData, recordToObject methods)
+  - Modified: `ralph/prd.json` (marked US-005 as complete)
+  - Modified: `scripts/ralph/progress.txt` (added progress entry and updated patterns)
+
+- **Key findings:**
+  - POST /api/v1/query was already implemented but lacked proper validation and error handling
+  - DELETE /api/v1/tables/:name/data/:id was already implemented in previous iterations
+  - Vector search endpoint (POST /api/v1/search) is NOT used by the web app - no UI for vector search
+  - LanceDB doesn't support direct updates; the pattern is: find row, delete it, insert updated version
+  - Common ID column names are tried in order: 'id', '_id', 'row_id', 'pk'
+
+- **Learnings for future iterations:**
+  - LanceDB table.add(data) accepts an array of records for insertion
+  - LanceDB table.delete(whereClause) deletes rows matching the filter
+  - LanceDB table.query().where().limit().toArray() is used to find specific rows
+  - The recordToObject pattern handles Float32Array, Float64Array, Uint8Array, Buffer, Date, and BigInt conversions
+  - Always escape single quotes in string values when building WHERE clauses: `value.replace(/'/g, "\\'")`
+  - Query history is not persisted in Electron mode (returns empty array) - could be enhanced with local storage if needed
 ---
 
 ## 2026-02-17 15:45 - US-004

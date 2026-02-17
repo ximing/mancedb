@@ -531,11 +531,28 @@ async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any
       }
     }
 
-    // Auth endpoints - authentication removed, return error
-    if (endpoint === '/api/v1/auth/login' && method === 'POST') {
-      return errorResponse(ErrorCode.FORBIDDEN, 'Authentication is disabled');
+    // Auth endpoints - authentication removed, matching server behavior
+    // POST /api/v1/auth/register - User registration is disabled
+    if (endpoint === '/api/v1/auth/register' && method === 'POST') {
+      return errorResponse(ErrorCode.PARAMS_ERROR, 'User registration is disabled');
     }
 
+    // POST /api/v1/auth/login - User login is disabled
+    if (endpoint === '/api/v1/auth/login' && method === 'POST') {
+      return errorResponse(ErrorCode.PARAMS_ERROR, 'User login is disabled');
+    }
+
+    // POST /api/v1/auth/connections/login - Connection-based authentication is disabled
+    if (endpoint === '/api/v1/auth/connections/login' && method === 'POST') {
+      return errorResponse(ErrorCode.PARAMS_ERROR, 'Authentication is disabled');
+    }
+
+    // POST /api/v1/auth/connections/refresh - Token refresh is disabled
+    if (endpoint === '/api/v1/auth/connections/refresh' && method === 'POST') {
+      return errorResponse(ErrorCode.PARAMS_ERROR, 'Token refresh is disabled');
+    }
+
+    // Legacy auth endpoints for backward compatibility
     if (endpoint === '/api/v1/auth/me' && method === 'GET') {
       return errorResponse(ErrorCode.FORBIDDEN, 'Authentication is disabled');
     }
@@ -544,9 +561,35 @@ async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any
       return successResponse({ success: true });
     }
 
-    // User endpoints - authentication removed, return error
+    // User endpoints - return anonymous user (matching server behavior)
+    // GET /api/v1/user/info - Get anonymous user info
+    if (endpoint === '/api/v1/user/info' && method === 'GET') {
+      return successResponse({
+        uid: 'anonymous',
+        email: 'anonymous@mancedb.local',
+        nickname: 'Anonymous',
+      });
+    }
+
+    // PUT /api/v1/user/info - Update user info (noop, returns anonymous user)
+    if (endpoint === '/api/v1/user/info' && method === 'PUT') {
+      return successResponse({
+        message: 'User info updated successfully',
+        user: {
+          uid: 'anonymous',
+          email: 'anonymous@mancedb.local',
+          nickname: 'Anonymous',
+        },
+      });
+    }
+
+    // Legacy user endpoint (plural form)
     if (endpoint === '/api/v1/users/profile' && method === 'GET') {
-      return errorResponse(ErrorCode.FORBIDDEN, 'Authentication is disabled');
+      return successResponse({
+        uid: 'anonymous',
+        email: 'anonymous@mancedb.local',
+        nickname: 'Anonymous',
+      });
     }
 
     // Connection-auth endpoints
