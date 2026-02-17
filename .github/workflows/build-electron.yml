@@ -162,7 +162,7 @@ jobs:
         run: pnpm --filter @mancedb/client build:electron
 
       - name: Build macOS x64
-        run: pnpm --filter @mancedb/client exec electron-builder --mac --x64 --publish=never
+        run: pnpm --filter @mancedb/client run dist:mac
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -218,7 +218,7 @@ jobs:
         run: pnpm --filter @mancedb/client build:electron
 
       - name: Build macOS arm64
-        run: pnpm --filter @mancedb/client exec electron-builder --mac --arm64 --publish=never
+        run: pnpm --filter @mancedb/client run dist:mac
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
