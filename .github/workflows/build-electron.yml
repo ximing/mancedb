@@ -126,7 +126,7 @@ jobs:
 
   # macOS Intel (x64) build
   build-macos-x64:
-    runs-on: macos-13
+    runs-on: macos-12
     needs: [build-packages, build-web, quality-checks]
     steps:
       - name: Checkout code
