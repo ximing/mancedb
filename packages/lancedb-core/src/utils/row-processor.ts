@@ -60,6 +60,17 @@ export function processValue(value: unknown): unknown {
     return `[${value.length} bytes]`;
   }
 
+  // Handle typed arrays (convert to regular arrays for IPC compatibility)
+  if (value instanceof Int32Array || value instanceof Int16Array || value instanceof Int8Array ||
+      value instanceof Uint32Array || value instanceof Uint16Array || value instanceof Uint8ClampedArray) {
+    return Array.from(value);
+  }
+
+  // Handle BigInt (convert to number for IPC compatibility)
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+
   // Handle nested objects (but not arrays of primitives)
   if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
     return processRow(value as Record<string, unknown>);

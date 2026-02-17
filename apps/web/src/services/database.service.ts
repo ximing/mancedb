@@ -146,7 +146,29 @@ export class DatabaseService extends Service {
    * Select a table
    */
   selectTable(tableName: string | null): void {
-    this.selectedTable = tableName;
+    // Only clear state if switching to a different table
+    if (this.selectedTable !== tableName) {
+      this.selectedTable = tableName;
+      // Clear schema and data to ensure fresh load for the new table
+      this.currentSchema = null;
+      this.tableData = {
+        rows: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 50,
+        totalPages: 0,
+        isLoading: false,
+        error: null,
+      };
+      // Reset filters and sorting
+      this.filters = [];
+      this.sortColumn = null;
+      this.sortOrder = 'asc';
+      // Clear row selection
+      this.selectedRowIds.clear();
+      // Reset to schema tab when switching tables
+      this.activeTab = 'schema';
+    }
   }
 
   /**

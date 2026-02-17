@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { view, useService } from '@rabjs/react';
 import { ConnectionService } from '../../services/connection.service';
+import { isMacOS, isElectron } from '../../utils/environment';
 import type { ConnectionDto } from '@mancedb/dto';
 
 // Icons as simple SVG components
@@ -89,17 +90,35 @@ interface ConnectionCardProps {
   connection: ConnectionDto;
   onDelete: (connection: ConnectionDto) => void;
   onClick: (connection: ConnectionDto) => void;
+  isConnecting?: boolean;
+  error?: string;
 }
 
-const ConnectionCard = ({ connection, onDelete, onClick }: ConnectionCardProps) => {
+const ConnectionCard = ({ connection, onDelete, onClick, isConnecting, error }: ConnectionCardProps) => {
   const isLocal = connection.type === 'local';
   const hasCredentials = connection.hasCredentials;
 
   return (
     <div
-      onClick={() => onClick(connection)}
-      className="group bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 p-5 hover:shadow-lg dark:hover:shadow-xl hover:border-primary-300 dark:hover:border-primary-700 transition-all cursor-pointer relative"
+      onClick={() => !isConnecting && onClick(connection)}
+      className={`group bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 p-5 hover:shadow-lg dark:hover:shadow-xl hover:border-primary-300 dark:hover:border-primary-700 transition-all relative ${isConnecting ? 'opacity-70 cursor-wait' : 'cursor-pointer'}`}
     >
+      {/* Error message */}
+      {error && (
+        <div className="absolute top-0 left-0 right-0 -mt-2 mx-4 px-3 py-1 bg-red-500 text-white text-xs rounded-full text-center z-10">
+          {error}
+        </div>
+      )}
+
+      {/* Connecting overlay */}
+      {isConnecting && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-dark-800/50 rounded-xl z-10">
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            <span className="text-sm font-medium">Connecting...</span>
+          </div>
+        </div>
+      )}
       {/* Delete button */}
       <button
         onClick={(e) => {
@@ -240,6 +259,8 @@ export const ConnectionListPage = view(() => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [connectionToDelete, setConnectionToDelete] = useState<ConnectionDto | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [connectingId, setConnectingId] = useState<string | null>(null);
+  const [connectionErrors, setConnectionErrors] = useState<Record<string, string>>({});
 
   // Load connections on mount
   useEffect(() => {
@@ -249,9 +270,33 @@ export const ConnectionListPage = view(() => {
   // Get filtered connections
   const filteredConnections = connectionService.getFilteredConnections(searchTerm);
 
-  // Handle connection click - navigate to login page for this connection
-  const handleConnectionClick = (connection: ConnectionDto) => {
-    navigate(`/connections/${connection.id}/login`);
+  // Handle connection click - connect to database then navigate
+  const handleConnectionClick = async (connection: ConnectionDto) => {
+    setConnectingId(connection.id);
+    try {
+      const result = await connectionService.connectToDatabase(connection);
+      if (result.success) {
+        navigate(`/connections/${connection.id}/database`);
+      } else {
+        setConnectionError(connection.id, result.message || 'Failed to connect');
+      }
+    } catch (err) {
+      setConnectionError(connection.id, err instanceof Error ? err.message : 'Connection failed');
+    } finally {
+      setConnectingId(null);
+    }
+  };
+
+  const setConnectionError = (id: string, error: string) => {
+    setConnectionErrors(prev => ({ ...prev, [id]: error }));
+    // Clear error after 3 seconds
+    setTimeout(() => {
+      setConnectionErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[id];
+        return newErrors;
+      });
+    }, 3000);
   };
 
   // Handle delete click
@@ -282,8 +327,8 @@ export const ConnectionListPage = view(() => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900">
       {/* Header */}
-      <header className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className={`bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 sticky top-0 z-10 ${isElectron() && isMacOS() ? 'pt-8' : ''}`}>
+        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 ${isElectron() && isMacOS() ? 'pl-20' : ''}`}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
@@ -359,6 +404,8 @@ export const ConnectionListPage = view(() => {
                     connection={connection}
                     onDelete={handleDeleteClick}
                     onClick={handleConnectionClick}
+                    isConnecting={connectingId === connection.id}
+                    error={connectionErrors[connection.id]}
                   />
                 ))}
               </div>

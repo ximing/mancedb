@@ -3,7 +3,7 @@
  * Manages database connections with local file persistence
  */
 
-import { Service } from 'typedi';
+import { Service, Container } from 'typedi';
 import { app } from 'electron';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -80,13 +80,15 @@ export class ConnectionService {
   private readonly configFile: string;
   private connections: Map<string, Connection> = new Map();
   private initialized = false;
+  private credentialService: CredentialService;
+  private lanceDBService: LanceDBService;
 
-  constructor(
-    private credentialService: CredentialService,
-    private lanceDBService: LanceDBService
-  ) {
+  constructor() {
     const userDataPath = app.getPath('userData');
     this.configFile = path.join(userDataPath, 'connections.json');
+    // Get services from container directly to avoid decorator issues in ESM
+    this.credentialService = Container.get(CredentialService);
+    this.lanceDBService = Container.get(LanceDBService);
   }
 
   /**

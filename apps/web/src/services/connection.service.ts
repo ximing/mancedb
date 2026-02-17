@@ -8,6 +8,7 @@ import {
   deleteConnection as deleteConnectionApi,
   testConnection as testConnectionApi,
 } from '../api/connection';
+import { isElectron } from '../utils/environment';
 
 export class ConnectionService extends Service {
   connections: ConnectionDto[] = [];
@@ -144,6 +145,7 @@ export class ConnectionService extends Service {
   async testConnection(id: string): Promise<{ success: boolean; message: string }> {
     try {
       const response = await testConnectionApi(id);
+      console.warn('response testConnection',response)
       if (response.code === 0) {
         return response.data;
       } else {
@@ -194,6 +196,52 @@ export class ConnectionService extends Service {
       return null;
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Connect to a database (Electron only)
+   * Establishes the actual database connection via IPC
+   */
+  async connectToDatabase(connection: ConnectionDto): Promise<{ success: boolean; message?: string }> {
+    // Only needed in Electron mode
+    if (!isElectron()) {
+      return { success: true };
+    }
+
+    try {
+      const electronAPI = window.electronAPI;
+      if (!electronAPI?.invoke) {
+        return { success: false, message: 'Electron API not available' };
+      }
+
+      if (connection.type === 'local') {
+        if (!connection.localPath) {
+          return { success: false, message: 'Local path not configured' };
+        }
+        const result = await electronAPI.invoke('db:connect', { path: connection.localPath }) as { success: boolean; message?: string };
+        return result;
+      } else if (connection.type === 's3') {
+        if (!connection.s3Bucket) {
+          return { success: false, message: 'S3 bucket not configured' };
+        }
+        // For S3, we need to get the full config with credentials
+        const result = await electronAPI.invoke('db:connectS3', {
+          bucket: connection.s3Bucket,
+          region: connection.s3Region || 'us-east-1',
+          endpoint: connection.s3Endpoint,
+          prefix: connection.s3Prefix,
+          // Credentials will be loaded from secure storage by the main process
+        }) as { success: boolean; message?: string };
+        return result;
+      }
+
+      return { success: false, message: 'Unknown connection type' };
+    } catch (err) {
+      return {
+        success: false,
+        message: err instanceof Error ? err.message : 'Failed to connect to database',
+      };
     }
   }
 }

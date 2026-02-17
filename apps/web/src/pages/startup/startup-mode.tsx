@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { view } from '@rabjs/react';
-import { isElectron } from '../../utils/environment';
+import { isElectron, isMacOS } from '../../utils/environment';
 import { setAPIMode } from '../../utils/api-client';
 
 // Icons as simple SVG components
@@ -365,8 +365,8 @@ export const StartupModePage = view(() => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex flex-col">
       {/* Header */}
-      <header className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <header className={`bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 ${isElectron() && isMacOS() ? 'pt-8' : ''}`}>
+        <div className={`max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 ${isElectron() && isMacOS() ? 'px-20' : ''}`}>
           <div className="flex items-center justify-center gap-3">
             <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
               <DatabaseIcon />

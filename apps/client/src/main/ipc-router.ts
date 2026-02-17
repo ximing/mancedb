@@ -10,6 +10,9 @@
 
 import { ipcMain } from 'electron';
 import { Container } from 'typedi';
+import './services/lancedb.service';
+import './services/credential.service';
+import './services/connection.service';
 import { LanceDBService } from './services/lancedb.service';
 import { CredentialService } from './services/credential.service';
 import { ConnectionService } from './services/connection.service';
@@ -74,13 +77,54 @@ function logError(context: string, error: unknown, additionalInfo?: Record<strin
 }
 
 /**
+ * Sanitize data for IPC transfer
+ * Converts non-serializable types (Date, Uint8Array, etc.) to serializable formats
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function sanitizeForIPC(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (obj instanceof Date) {
+    return obj.toISOString();
+  }
+
+  if (obj instanceof Uint8Array || obj instanceof Buffer) {
+    return `[${obj.length} bytes]`;
+  }
+
+  if (obj instanceof Float32Array || obj instanceof Float64Array || obj instanceof Int32Array || obj instanceof Int16Array || obj instanceof Int8Array) {
+    return Array.from(obj);
+  }
+
+  if (typeof obj === 'bigint') {
+    return Number(obj);
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeForIPC(item));
+  }
+
+  if (typeof obj === 'object') {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      sanitized[key] = sanitizeForIPC(value);
+    }
+    return sanitized;
+  }
+
+  return obj;
+}
+
+/**
  * Create a success response
  * Matches server ResponseUtil.success format
  */
 function successResponse<T>(data: T, msg = ErrorMessage[ErrorCode.SUCCESS]): APIResponse<T> {
   return {
     code: ErrorCode.SUCCESS,
-    data,
+    data: sanitizeForIPC(data),
     msg,
   };
 }
@@ -517,8 +561,8 @@ async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any
     if (connectionTestMatch && method === 'POST') {
       const connectionService = getConnectionService();
       const id = decodeURIComponent(connectionTestMatch[1]);
-
       try {
+        console.warn('connectionService',connectionService,id)
         const result = await connectionService.testConnection(id);
         if (result.success) {
           return successResponse(result);
@@ -620,13 +664,15 @@ export function registerIPCHandlers(): void {
   });
 
   // Handle database connection
-  ipcMain.handle('db:connect', async (_event, dbPath: string) => {
+  ipcMain.handle('db:connect', async (_event, options: { path: string } | string) => {
     try {
       const lancedbService = getLanceDBService();
+      // Support both { path: string } object and direct string for backward compatibility
+      const dbPath = typeof options === 'string' ? options : options.path;
       await lancedbService.connectToDatabase(dbPath);
       return { success: true, message: 'Connected successfully' };
     } catch (error) {
-      logError('Database connection failed', error, { dbPath });
+      logError('Database connection failed', error, { options });
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to connect to database',

@@ -249,7 +249,9 @@ export class QueryEngine {
 
     for (const [key, value] of Object.entries(record)) {
       // Handle different value types
-      if (value instanceof Float32Array || value instanceof Float64Array) {
+      if (value instanceof Float32Array || value instanceof Float64Array ||
+          value instanceof Int32Array || value instanceof Int16Array || value instanceof Int8Array ||
+          value instanceof Uint32Array || value instanceof Uint16Array || value instanceof Uint8ClampedArray) {
         // Convert typed arrays to regular arrays
         obj[key] = Array.from(value);
       } else if (value instanceof Uint8Array || value instanceof Buffer) {
@@ -261,6 +263,17 @@ export class QueryEngine {
       } else if (typeof value === 'bigint') {
         // Convert BigInt to number or string
         obj[key] = Number(value);
+      } else if (value !== null && typeof value === 'object') {
+        // Recursively handle nested objects (e.g., Arrow structs)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((value as any).toJSON) {
+          // If object has toJSON method, use it
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          obj[key] = (value as any).toJSON();
+        } else {
+          // Otherwise, recursively convert
+          obj[key] = this.recordToObject(value as Record<string, unknown>);
+        }
       } else {
         obj[key] = value;
       }

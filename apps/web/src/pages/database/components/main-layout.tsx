@@ -5,6 +5,7 @@ import { DatabaseService } from '../../../services/database.service';
 import { connectionAuthService } from '../../../services/connection-auth.service';
 import { ConnectionService } from '../../../services/connection.service';
 import { ThemeService } from '../../../services/theme.service';
+import { isMacOS, isElectron } from '../../../utils/environment';
 import type { ConnectionDto } from '@mancedb/dto';
 
 // Use singleton instance directly
@@ -272,7 +273,9 @@ export const MainLayout = view(({ children }: MainLayoutProps) => {
         }`}
       >
         {/* Sidebar Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-dark-700">
+        <div className={`min-h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-dark-700 ${
+          isElectron() && isMacOS() ? 'pt-8 pb-2' : 'h-16'
+        }`}>
           {!databaseService.sidebarCollapsed && (
             <Link to="/" className="flex items-center gap-2 text-primary-600 dark:text-primary-400">
               <DatabaseIcon />
@@ -443,7 +446,11 @@ export const MainLayout = view(({ children }: MainLayoutProps) => {
         }`}
       >
         {/* Top Toolbar */}
-        <header className="h-16 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 flex items-center justify-between px-6">
+        <header
+          className={`h-16 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 flex items-center justify-between px-6 ${
+            isElectron() && isMacOS() ? 'pl-20' : ''
+          }`}
+        >
           <div className="flex items-center gap-4">
             {/* Mobile menu button */}
             <button
