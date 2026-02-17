@@ -51,8 +51,8 @@ export const Layout = view(({ children }: LayoutProps) => {
     navigate('/', { replace: true });
   };
 
-  const userName = authService.user?.nickname || authService.user?.email?.split('@')[0] || 'User';
-  const userEmail = authService.user?.email || '';
+  const userName = 'Anonymous';
+  const userEmail = 'anonymous@mancedb.local';
 
   return (
     <div className="h-screen flex bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-gray-50 transition-colors">

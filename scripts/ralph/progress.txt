@@ -191,3 +191,27 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
   - The IPC router pattern for table endpoints uses regex matching for dynamic routes
   - Always validate table/column names to match LanceDB naming conventions
 ---
+
+## 2026-02-17 17:00 - Build Fixes
+- **What was implemented:**
+  - Fixed missing exports in `@mancedb/dto` package that caused build failures
+  - Added `auth.ts` and `user.ts` exports to `packages/dto/src/index.ts`
+  - Added `s3Prefix` property to `ConnectionDto`, `CreateConnectionDto`, and `UpdateConnectionDto`
+  - Fixed `layout.tsx` to use hardcoded anonymous user (auth has been removed)
+
+- **Files changed:**
+  - Modified: `packages/dto/src/index.ts` (added auth and user exports)
+  - Modified: `packages/dto/src/connection.ts` (added s3Prefix field)
+  - Modified: `apps/web/src/components/layout.tsx` (fixed user display for anonymous auth)
+
+- **Key findings:**
+  - The DTO package was missing exports for auth and user types that the web app expected
+  - Connection DTOs were missing the `s3Prefix` field used by the connection service
+  - AuthService.user is null (auth removed), so layout needs to handle anonymous user display
+  - ESLint has a pre-existing configuration issue with eslint-plugin-turbo (not related to changes)
+
+- **Learnings for future iterations:**
+  - Always run `pnpm build` before committing to catch missing exports
+  - When auth is removed, components that reference `authService.user` need to be updated
+  - The DTO package is a shared dependency - changes affect both web and client apps
+---

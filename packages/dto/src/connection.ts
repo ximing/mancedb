@@ -12,6 +12,7 @@ export interface ConnectionDto {
   s3Bucket?: string;
   s3Region?: string;
   s3Endpoint?: string;
+  s3Prefix?: string;
   dbUsername?: string;
   hasCredentials?: boolean;
   createdAt: number;
@@ -49,6 +50,10 @@ export class CreateConnectionDto {
   @IsOptional()
   @IsString()
   s3Endpoint?: string;
+
+  @IsOptional()
+  @IsString()
+  s3Prefix?: string;
 
   @IsOptional()
   @IsString()
@@ -91,6 +96,10 @@ export class UpdateConnectionDto {
   @IsOptional()
   @IsString()
   s3Endpoint?: string;
+
+  @IsOptional()
+  @IsString()
+  s3Prefix?: string;
 
   @IsOptional()
   @IsString()
