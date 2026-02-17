@@ -278,14 +278,93 @@ async function routeRequest(options: IPCRequestOptions): Promise<APIResponse<any
 
     // Query endpoints
     if (endpoint === '/api/v1/query' && method === 'POST') {
-      const { sql, limit } = data as { sql: string; limit?: number };
-      const result = await lancedbService.executeQuery(sql, limit);
-      return successResponse(result);
+      try {
+        const { sql, limit } = data as { sql: string; limit?: number };
+
+        // Validate SQL query
+        if (!sql || typeof sql !== 'string' || sql.trim().length === 0) {
+          return errorResponse(ErrorCode.PARAMS_ERROR, 'SQL query is required');
+        }
+
+        // Validate limit
+        const validatedLimit = limit ? Math.min(1000, Math.max(1, limit)) : 1000;
+
+        const result = await lancedbService.executeQuery(sql.trim(), validatedLimit);
+        return successResponse(result);
+      } catch (error) {
+        logError('Execute query error', error);
+        if (error instanceof Error) {
+          if (error.message.includes('not found')) {
+            return errorResponse(ErrorCode.NOT_FOUND, error.message);
+          }
+          if (error.message.includes('Only SELECT')) {
+            return errorResponse(ErrorCode.PARAMS_ERROR, error.message);
+          }
+          if (error.message.includes('Invalid SQL')) {
+            return errorResponse(ErrorCode.PARAMS_ERROR, error.message);
+          }
+        }
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to execute query');
+      }
     }
 
     if (endpoint === '/api/v1/query/history' && method === 'GET') {
       // Query history is not persisted in local mode, return empty
+      // Parse limit parameter
+      const limitParam = (params as Record<string, unknown>)?.limit;
+      const limit = Math.min(100, Math.max(1, parseInt(String(limitParam || '20'), 10)));
+      void limit; // Currently unused since we return empty
       return successResponse({ history: [] });
+    }
+
+    // Table data insert endpoint - POST /api/v1/tables/:name/data
+    const tableDataInsertMatch = endpoint.match(/^\/api\/v1\/tables\/([^/]+)\/data$/);
+    if (tableDataInsertMatch && method === 'POST') {
+      try {
+        const tableName = decodeURIComponent(tableDataInsertMatch[1]);
+        const { rows } = data as { rows: Record<string, unknown>[] };
+
+        // Validate data
+        if (!rows || !Array.isArray(rows) || rows.length === 0) {
+          return errorResponse(ErrorCode.PARAMS_ERROR, 'Rows data is required and must be a non-empty array');
+        }
+
+        const result = await lancedbService.insertData(tableName, rows);
+        return successResponse(result, 'Data inserted successfully');
+      } catch (error) {
+        logError('Insert data error', error, { tableName: tableDataInsertMatch?.[1] });
+        if (error instanceof Error && error.message.includes('not found')) {
+          return errorResponse(ErrorCode.NOT_FOUND, error.message);
+        }
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to insert data');
+      }
+    }
+
+    // Table data update endpoint - PUT /api/v1/tables/:name/data/:id
+    const tableDataUpdateMatch = endpoint.match(/^\/api\/v1\/tables\/([^/]+)\/data\/([^/]+)$/);
+    if (tableDataUpdateMatch && method === 'PUT') {
+      try {
+        const tableName = decodeURIComponent(tableDataUpdateMatch[1]);
+        const rowId = decodeURIComponent(tableDataUpdateMatch[2]);
+        const rowData = data as Record<string, unknown>;
+
+        // Validate data
+        if (!rowData || typeof rowData !== 'object') {
+          return errorResponse(ErrorCode.PARAMS_ERROR, 'Row data is required');
+        }
+
+        // Parse row ID as number if it's numeric
+        const parsedRowId = /^\d+$/.test(rowId) ? parseInt(rowId, 10) : rowId;
+
+        const result = await lancedbService.updateData(tableName, parsedRowId, rowData);
+        return successResponse(result, 'Data updated successfully');
+      } catch (error) {
+        logError('Update data error', error, { tableName: tableDataUpdateMatch?.[1], rowId: tableDataUpdateMatch?.[2] });
+        if (error instanceof Error && error.message.includes('not found')) {
+          return errorResponse(ErrorCode.NOT_FOUND, error.message);
+        }
+        return errorResponse(ErrorCode.DB_ERROR, error instanceof Error ? error.message : 'Failed to update data');
+      }
     }
 
     // Connection endpoints

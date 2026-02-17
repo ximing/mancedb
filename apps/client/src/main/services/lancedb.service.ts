@@ -28,6 +28,20 @@ import type { TableDataQueryOptions } from '@mancedb/dto';
 import type { S3Config } from './credential.service';
 
 /**
+ * Result of inserting data into a table
+ */
+export interface InsertDataResult {
+  insertedCount: number;
+}
+
+/**
+ * Result of updating data in a table
+ */
+export interface UpdateDataResult {
+  updatedCount: number;
+}
+
+/**
  * Result of executing a SQL query
  */
 export interface ExecuteQueryResult {
@@ -362,6 +376,128 @@ export class LanceDBService {
     }
 
     throw new Error(`Could not delete row with ID '${rowId}'. No valid ID column found.`);
+  }
+
+  /**
+   * Insert data into a table
+   */
+  async insertData(
+    tableName: string,
+    data: Record<string, unknown>[],
+    dbPath?: string
+  ): Promise<InsertDataResult> {
+    const uri = dbPath || this.getActiveUri();
+
+    // Check if table exists
+    const exists = await this.tableManager.tableExists(uri, tableName);
+    if (!exists) {
+      throw new Error(`Table '${tableName}' not found`);
+    }
+
+    const table = await this.tableManager.getTable(uri, tableName);
+
+    // Validate data
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error('Data must be a non-empty array of records');
+    }
+
+    // Add data to table using merge operation (insert)
+    await table.add(data);
+
+    return { insertedCount: data.length };
+  }
+
+  /**
+   * Update data in a table by ID
+   * Note: LanceDB doesn't support direct updates. We delete the old row and insert the new one.
+   */
+  async updateData(
+    tableName: string,
+    rowId: string | number,
+    data: Record<string, unknown>,
+    dbPath?: string
+  ): Promise<UpdateDataResult> {
+    const uri = dbPath || this.getActiveUri();
+
+    // Check if table exists
+    const exists = await this.tableManager.tableExists(uri, tableName);
+    if (!exists) {
+      throw new Error(`Table '${tableName}' not found`);
+    }
+
+    const table = await this.tableManager.getTable(uri, tableName);
+
+    // Validate data
+    if (!data || typeof data !== 'object') {
+      throw new Error('Data must be a valid object');
+    }
+
+    // Try to find and update by common ID column names
+    const idColumns = ['id', '_id', 'row_id', 'pk'];
+    let idColumn: string | undefined;
+    let existingRow: Record<string, unknown> | undefined;
+
+    // Find the ID column that exists in the table
+    const schema = await table.schema();
+    for (const idCol of idColumns) {
+      if (schema.fields.some((f) => f.name === idCol)) {
+        try {
+          const escapedRowId = typeof rowId === 'string' ? rowId.replace(/'/g, "\\'") : rowId;
+          const results = await table.query().where(`${idCol} = '${escapedRowId}'`).limit(1).toArray();
+          if (results.length > 0) {
+            idColumn = idCol;
+            existingRow = this.recordToObject(results[0]);
+            break;
+          }
+        } catch {
+          continue;
+        }
+      }
+    }
+
+    if (!idColumn || !existingRow) {
+      throw new Error(`Could not find row with ID '${rowId}'. No valid ID column found.`);
+    }
+
+    // Merge existing data with updates
+    const updatedRow = { ...existingRow, ...data, [idColumn]: rowId };
+
+    // Delete old row
+    const escapedRowId = typeof rowId === 'string' ? rowId.replace(/'/g, "\\'") : rowId;
+    await table.delete(`${idColumn} = '${escapedRowId}'`);
+
+    // Insert updated row
+    await table.add([updatedRow]);
+
+    return { updatedCount: 1 };
+  }
+
+  /**
+   * Convert a LanceDB record to a plain JavaScript object
+   */
+  private recordToObject(record: Record<string, unknown>): Record<string, unknown> {
+    const obj: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(record)) {
+      // Handle different value types
+      if (value instanceof Float32Array || value instanceof Float64Array) {
+        // Convert typed arrays to regular arrays
+        obj[key] = Array.from(value);
+      } else if (value instanceof Uint8Array || value instanceof Buffer) {
+        // Keep binary data as is
+        obj[key] = value;
+      } else if (value instanceof Date) {
+        // Keep dates as is
+        obj[key] = value;
+      } else if (typeof value === 'bigint') {
+        // Convert BigInt to number
+        obj[key] = Number(value);
+      } else {
+        obj[key] = value;
+      }
+    }
+
+    return obj;
   }
 
   /**
