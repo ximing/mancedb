@@ -1,0 +1,32 @@
+## Codebase Patterns
+- Electron auto-updater is already configured in `apps/client/src/main/updater.ts` with `electron-updater`
+- Menu items for "Check for Updates" already exist in `apps/client/src/main/menu.ts`
+- Build order: dto → lancedb-core → web → client (must respect workspace dependencies)
+- Use `pnpm --filter @mancedb/<package>` to run commands in specific packages
+- Electron builder config is in `apps/client/electron-builder.yml` (not json)
+- macOS dual architecture requires separate jobs: `macos-13` for x64, `macos-latest` for arm64
+- GitHub Actions artifacts should use `if-no-files-found: warn` for platform-specific builds
+
+## 2026-02-17 - US-001 through US-006
+- Created comprehensive GitHub Actions workflow at `.github/workflows/build-electron.yml`
+- Configured 4 parallel build jobs: macOS x64 (macos-13), macOS arm64 (macos-latest), Windows, Linux
+- Set up pnpm caching and Node.js 20 environment
+- Implemented proper build order: packages → web → platform-specific client builds
+- Added quality checks job (typecheck + lint) that runs before platform builds
+- Configured automatic GitHub Release creation on tag push (v*)
+- Release draft mode for alpha/beta/rc tags, auto-generated release notes
+- Added build status badge to README.md
+- Verified auto-updater already integrated (electron-updater in updater.ts)
+- Verified "Check for Updates" menu item already exists in Help menu
+- Files changed:
+  - `.github/workflows/build-electron.yml` (new)
+  - `README.md` (added badge)
+- Typecheck: Passed
+- Lint: Passed
+- **Learnings for future iterations:**
+  - The existing `build-client.yml` is simpler but doesn't separate macOS architectures
+  - electron-builder.yml already has publish config for GitHub releases
+  - Use `macos-13` runner for Intel builds as `macos-latest` is now Apple Silicon
+  - Artifacts need unique names per job to avoid collisions
+  - The `merge-multiple: true` option simplifies downloading all artifacts for release
+---

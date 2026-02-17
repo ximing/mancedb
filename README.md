@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/ximing/mancedb/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ximing/mancedb/actions/workflows/ci.yml)
 [![Docker Build and Publish](https://github.com/ximing/mancedb/actions/workflows/docker-publish.yml/badge.svg?branch=master)](https://github.com/ximing/mancedb/actions/workflows/docker-publish.yml)
+[![Build Electron](https://github.com/ximing/mancedb/actions/workflows/build-electron.yml/badge.svg)](https://github.com/ximing/mancedb/actions/workflows/build-electron.yml)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-green)
 ![React](https://img.shields.io/badge/React-19-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-blue)

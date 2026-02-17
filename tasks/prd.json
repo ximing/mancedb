@@ -1,0 +1,103 @@
+{
+  "project": "ManceDB",
+  "branchName": "ralph/github-actions-electron-build",
+  "description": "GitHub Actions Electron 多平台构建 - 配置 CI/CD 工作流为 Electron 桌面应用构建 macOS (Intel/Apple Silicon)、Linux 和 Windows 安装包",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "创建 GitHub Actions 工作流文件",
+      "description": "作为开发者，我需要 GitHub Actions 工作流来自动构建 Electron 应用。",
+      "acceptanceCriteria": [
+        "创建 `.github/workflows/build-electron.yml` 文件",
+        "配置触发条件：push 到任意分支",
+        "配置 matrix 构建策略，支持 4 个平台目标",
+        "设置 Node.js 20 环境",
+        "安装 pnpm 并配置缓存",
+        "安装项目依赖",
+        "按正确顺序构建：dto → lancedb-core → web → client",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "配置 macOS 双架构构建",
+      "description": "作为 macOS 用户，我希望下载到适配我芯片架构的应用。",
+      "acceptanceCriteria": [
+        "macOS Intel (x64) 构建任务正常运行",
+        "macOS Apple Silicon (arm64) 构建任务正常运行",
+        "构建产物文件名区分架构 (如 `-mac-x64.dmg`, `-mac-arm64.dmg`)",
+        "构建产物包含在 Artifact 中",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "配置 Linux 和 Windows 构建",
+      "description": "作为 Linux/Windows 用户，我希望下载到对应平台的安装包。",
+      "acceptanceCriteria": [
+        "Linux (x64) 构建任务正常运行，输出 `.AppImage` 或 `.deb`",
+        "Windows (x64) 构建任务正常运行，输出 `.exe` 安装包",
+        "构建产物文件名清晰标识平台",
+        "构建产物包含在 Artifact 中",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "自动发布到 GitHub Release",
+      "description": "作为开发者，我希望构建产物自动发布到 GitHub Release。",
+      "acceptanceCriteria": [
+        "推送 tag 时自动创建 Release",
+        "构建产物自动上传到 Release 附件",
+        "Release 标题和描述自动生成",
+        "草稿 (draft) 模式可选",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "集成 Electron 自动更新",
+      "description": "作为用户，我希望应用能自动检测并安装更新。",
+      "acceptanceCriteria": [
+        "安装 `electron-updater` 依赖",
+        "在主进程 (main/index.ts) 中初始化 autoUpdater",
+        "配置更新服务器 URL (使用 GitHub Release)",
+        "生成 `latest-mac.yml`, `latest-linux.yml`, `latest.yml` 更新文件",
+        "更新文件随构建产物一起发布",
+        "添加菜单项或 UI 检查更新按钮",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "优化构建流程",
+      "description": "作为开发者，我希望构建流程高效可靠。",
+      "acceptanceCriteria": [
+        "使用 pnpm 缓存加速依赖安装",
+        "并行构建不同平台 (使用 matrix)",
+        "构建失败时发送通知或标记",
+        "添加构建状态 badge 到 README",
+        "构建日志清晰可读",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
