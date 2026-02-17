@@ -133,6 +133,37 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
   - Query history is not persisted in Electron mode (returns empty array) - could be enhanced with local storage if needed
 ---
 
+## 2026-02-17 16:45 - US-006
+- **What was implemented:**
+  - Updated auth endpoints to match server behavior (authentication is disabled)
+  - POST /api/v1/auth/register - Returns "User registration is disabled" error
+  - POST /api/v1/auth/login - Returns "User login is disabled" error
+  - POST /api/v1/auth/connections/login - Returns "Authentication is disabled" error
+  - POST /api/v1/auth/connections/refresh - Returns "Token refresh is disabled" error
+  - GET /api/v1/user/info - Returns anonymous user data (uid: 'anonymous', email: 'anonymous@mancedb.local', nickname: 'Anonymous')
+  - PUT /api/v1/user/info - Returns success with anonymous user data (noop update)
+  - Updated /api/v1/users/profile to return anonymous user (matching server)
+  - Preserved /api/v1/auth/logout for backward compatibility (returns success)
+  - Preserved /api/v1/auth/me for backward compatibility (returns error)
+
+- **Files changed:**
+  - Modified: `apps/client/src/main/ipc-router.ts` (updated auth endpoint handlers)
+  - Modified: `ralph/prd.json` (marked US-006 as complete)
+  - Modified: `scripts/ralph/progress.txt` (added progress entry)
+
+- **Key findings:**
+  - Server has deprecated authentication and returns mock responses
+  - Web app calls auth endpoints but handles the disabled state gracefully
+  - No JWT token handling needed in Electron mode (authentication is bypassed)
+  - User endpoints return anonymous user to maintain API compatibility
+
+- **Learnings for future iterations:**
+  - Authentication endpoints should match server behavior exactly for web app compatibility
+  - Error code PARAMS_ERROR (2) is used for disabled features (matching server)
+  - Anonymous user pattern: { uid: 'anonymous', email: 'anonymous@mancedb.local', nickname: 'Anonymous' }
+  - Connection-auth endpoints (/api/v1/connection-auth/verify) are separate from auth endpoints
+---
+
 ## 2026-02-17 15:45 - US-004
 - **What was implemented:**
   - Added `POST /api/v1/tables` endpoint to create new tables with column definitions

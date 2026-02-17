@@ -99,8 +99,8 @@
         "Verify in Electron client"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: All auth endpoints now match server behavior. Authentication is disabled in both modes. Endpoints implemented: POST /api/v1/auth/register (disabled), POST /api/v1/auth/login (disabled), POST /api/v1/auth/connections/login (disabled), POST /api/v1/auth/connections/refresh (disabled), GET/PUT /api/v1/user/info (returns anonymous user), /api/v1/auth/logout (success)."
     }
   ]
 }
