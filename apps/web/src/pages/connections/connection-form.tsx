@@ -552,24 +552,24 @@ export const ConnectionFormPage = view(() => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
-                      label="Access Key"
+                      label="Access Key (Optional)"
                       name="s3AccessKey"
                       type="password"
                       value={formData.s3AccessKey || ''}
                       onChange={(value) => updateField('s3AccessKey', value)}
                       placeholder="AKIA..."
                       error={errors.s3AccessKey}
-                      helpText={isEditMode ? 'Leave blank to keep existing' : 'Optional for public S3 buckets'}
+                      helpText={isEditMode ? 'Leave blank to keep existing. Required for private S3 buckets' : 'Required for private S3 buckets. Leave empty for public buckets'}
                     />
                     <FormField
-                      label="Secret Key"
+                      label="Secret Key (Optional)"
                       name="s3SecretKey"
                       type="password"
                       value={formData.s3SecretKey || ''}
                       onChange={(value) => updateField('s3SecretKey', value)}
                       placeholder="••••••••"
                       error={errors.s3SecretKey}
-                      helpText={isEditMode ? 'Leave blank to keep existing' : 'Optional for public S3 buckets'}
+                      helpText={isEditMode ? 'Leave blank to keep existing. Required for private S3 buckets' : 'Required for private S3 buckets. Leave empty for public buckets'}
                     />
                   </div>
                 </div>
@@ -584,22 +584,22 @@ export const ConnectionFormPage = view(() => {
             </h2>
             <div className="space-y-4">
               <FormField
-                label="Username"
+                label="Username (Optional)"
                 name="dbUsername"
                 value={formData.dbUsername || ''}
                 onChange={(value) => updateField('dbUsername', value)}
                 placeholder="admin"
-                helpText="Optional username for database access"
+                helpText="Only required if your database is configured with authentication"
               />
               <FormField
-                label="Password"
+                label="Password (Optional)"
                 name="dbPassword"
                 type="password"
                 value={formData.dbPassword || ''}
                 onChange={(value) => updateField('dbPassword', value)}
                 placeholder="••••••••"
                 error={errors.dbPassword}
-                helpText={isEditMode ? 'Leave blank to keep existing password' : 'Optional password for database authentication'}
+                helpText={isEditMode ? 'Leave blank to keep existing. Only required if database has authentication enabled' : 'Only required if your database is configured with authentication'}
               />
             </div>
           </section>
