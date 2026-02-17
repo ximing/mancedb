@@ -61,7 +61,6 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: ManceDB
   uninstallDisplayName: ManceDB
-  include: build/installer.nsh
 msi:
   createDesktopShortcut: true
   runAfterFinish: true
