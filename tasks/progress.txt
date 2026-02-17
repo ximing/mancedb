@@ -23,6 +23,41 @@
 - Electron Auth Removal Pattern: IPC router auth endpoints should return error (403) when authentication is disabled, keeping only logout as no-op for compatibility
 - Documentation Update Pattern: When removing auth, update ENVIRONMENT.md, .env.example, and README.md to reflect that authentication is no longer required
 - S3 Empty Credentials Pattern: ConnectionManager.createS3Connection already handles empty credentials by only adding them to storageOptions when present (supports public S3 buckets)
+- **Form Validation Pattern: Credential fields (s3AccessKey, s3SecretKey, dbPassword) should not have required validation to support public S3 buckets and unauthenticated local databases**
+- **Form Label Pattern: Add "(Optional)" suffix to field labels for optional fields, and provide clear help text explaining when the field is required**
+
+---
+
+## 2026-02-17 - US-004 (Optional Connection Credentials)
+- Added (Optional) label to Access Key and Secret Key fields in S3 configuration section
+- Added (Optional) label to Username and Password fields in Authentication section
+- Updated help text for S3 credentials: "Required for private S3 buckets. Leave empty for public buckets"
+- Updated help text for database credentials: "Only required if your database is configured with authentication"
+- Maintained consistent styling with existing form fields
+- Typecheck passes for web package
+- Lint passes with only pre-existing warnings
+
+**Learnings for future iterations:**
+- Use "(Optional)" suffix in field labels to indicate optional fields (consistent with "Endpoint (Optional)" pattern)
+- Help text should explain both when fields are optional AND when they are required
+- For edit mode, clarify that leaving blank keeps existing credentials
+- Keep label changes minimal - just add the optional suffix without changing the main label text
+
+---
+
+## 2026-02-17 - US-003 (Optional Connection Credentials)
+- Removed required validation for s3AccessKey and s3SecretKey in validateForm()
+- Removed required validation for dbPassword in validateForm()
+- Updated FormField props to remove required={!isEditMode} from credential fields
+- Updated help text to indicate credentials are optional for public S3 buckets
+- Typecheck passes for web package
+- Lint passes with only pre-existing warnings
+
+**Learnings for future iterations:**
+- The connection form uses a validateForm() function that validates fields before submission
+- FormField component has a required prop that shows a red asterisk (*) when true
+- Help text should indicate when fields are optional and under what circumstances
+- Both create and edit modes should allow empty credentials for public S3 buckets
 
 ---
 

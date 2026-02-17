@@ -46,8 +46,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Removed required validation from s3AccessKey, s3SecretKey, and dbPassword fields in connection-form.tsx"
     },
     {
       "id": "US-004",
@@ -62,8 +62,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added (Optional) label to Access Key, Secret Key, Username, and Password fields. Updated help text to clarify when credentials are required."
     },
     {
       "id": "US-005",
