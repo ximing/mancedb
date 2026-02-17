@@ -22,6 +22,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Use official npm registry
+        run: |
+          cat > .npmrc <<'EOF'
+          registry=https://registry.npmjs.org/
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+          cat > apps/client/.npmrc <<'EOF'
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -58,6 +68,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          cat > .npmrc <<'EOF'
+          registry=https://registry.npmjs.org/
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+          cat > apps/client/.npmrc <<'EOF'
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -98,6 +118,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Use official npm registry
+        run: |
+          cat > .npmrc <<'EOF'
+          registry=https://registry.npmjs.org/
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+          cat > apps/client/.npmrc <<'EOF'
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -126,11 +156,21 @@ jobs:
 
   # macOS Intel (x64) build
   build-macos-x64:
-    runs-on: macos-13
+    runs-on: macos-14
     needs: [build-packages, build-web, quality-checks]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          cat > .npmrc <<'EOF'
+          registry=https://registry.npmjs.org/
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+          cat > apps/client/.npmrc <<'EOF'
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -159,13 +199,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Rebuild native modules for x64
-        run: cd apps/client && pnpm exec electron-builder install-app-deps
+        run: cd apps/client && pnpm exec electron-builder install-app-deps --arch=x64
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
 
       - name: Build macOS x64
-        run: pnpm --filter @mancedb/client run dist:mac
+        run: pnpm --filter @mancedb/client run dist:mac -- --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -190,6 +230,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          cat > .npmrc <<'EOF'
+          registry=https://registry.npmjs.org/
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+          cat > apps/client/.npmrc <<'EOF'
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -256,6 +306,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Use official npm registry
+        run: |
+          cat > .npmrc <<'EOF'
+          registry=https://registry.npmjs.org/
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+          cat > apps/client/.npmrc <<'EOF'
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -311,6 +371,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          cat > .npmrc <<'EOF'
+          registry=https://registry.npmjs.org/
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
+          cat > apps/client/.npmrc <<'EOF'
+          @lancedb:registry=https://registry.npmjs.org/
+          EOF
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
