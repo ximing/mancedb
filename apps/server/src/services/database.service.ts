@@ -31,17 +31,13 @@ export class DatabaseService {
         throw new Error('S3 configuration is incomplete');
       }
 
-      // Decrypt credentials
+      // Decrypt credentials (optional for public S3 buckets)
       const accessKey = connection.s3AccessKey
         ? await this.decryptIfNeeded(connection.s3AccessKey)
         : undefined;
       const secretKey = connection.s3SecretKey
         ? await this.decryptIfNeeded(connection.s3SecretKey)
         : undefined;
-
-      if (!accessKey || !secretKey) {
-        throw new Error('S3 credentials are not configured');
-      }
 
       const path = `s3://${connection.s3Bucket}/lancedb`;
       return await this.connectionManager.connect(path, {

@@ -303,21 +303,23 @@ export class ConnectionService {
         }
 
         try {
-          // Decrypt credentials
+          // Decrypt credentials (optional for public S3 buckets)
           const accessKey = connection.s3AccessKey ? this.decrypt(connection.s3AccessKey) : undefined;
           const secretKey = connection.s3SecretKey ? this.decrypt(connection.s3SecretKey) : undefined;
-
-          if (!accessKey || !secretKey) {
-            return { success: false, message: 'S3 credentials are not configured' };
-          }
 
           const storageOptions: Record<string, string> = {
             virtualHostedStyleRequest: 'true',
             conditionalPut: 'disabled',
-            awsAccessKeyId: accessKey,
-            awsSecretAccessKey: secretKey,
             awsRegion: connection.s3Region,
           };
+
+          // Only add credentials if they are provided (supports public buckets)
+          if (accessKey) {
+            storageOptions.awsAccessKeyId = accessKey;
+          }
+          if (secretKey) {
+            storageOptions.awsSecretAccessKey = secretKey;
+          }
 
           if (connection.s3Endpoint) {
             storageOptions.awsEndpoint = connection.s3Endpoint;
