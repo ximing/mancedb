@@ -62,7 +62,6 @@ nsis:
   shortcutName: ManceDB
   uninstallDisplayName: ManceDB
   include: build/installer.nsh
-  publisherName: ManceDB
 msi:
   createDesktopShortcut: true
   runAfterFinish: true
@@ -82,9 +81,10 @@ linux:
   synopsis: ManceDB Desktop Client
   description: Desktop client for managing LanceDB databases
   desktop:
-    Name: ManceDB
-    Comment: ManceDB Database Administration Tool
-    Categories: Development;Database;
+    entry:
+      Name: ManceDB
+      Comment: ManceDB Database Administration Tool
+      Categories: Development;Database;
 appImage:
   artifactName: ${name}-${version}-${arch}.${ext}
 # Publish Configuration

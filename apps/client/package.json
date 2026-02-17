@@ -2,6 +2,8 @@
   "name": "@mancedb/client",
   "private": true,
   "version": "0.0.0",
+  "description": "Desktop client for managing LanceDB databases",
+  "author": "ManceDB",
   "license": "BSL-1.1",
   "type": "module",
   "main": "dist/main/index.js",
