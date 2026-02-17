@@ -1,3 +1,36 @@
 # Ralph Progress Log
 Started: 2026年 2月15日 星期日 23时33分46秒 CST
 ---
+
+## Codebase Patterns
+- The Electron IPC router uses a simple if/else routing pattern in `ipc-router.ts`
+- Server controllers use `routing-controllers` decorators but IPC router uses manual pattern matching
+- Error responses follow format: `{ code: number, data: T, message?: string }`
+- Server uses `ResponseUtil.success/error` - IPC router uses `successResponse/errorResponse` helpers
+- TypeDI is used for dependency injection in both server and client
+- LanceDBService in Electron wraps `@mancedb/lancedb-core` services
+
+## 2026-02-17 10:30 - US-001
+- **What was implemented:**
+  - Analyzed all server controllers in `apps/server/src/controllers/`
+  - Documented all 30+ API endpoints across 7 controller files
+  - Compared against current IPC router implementation in `apps/client/src/main/ipc-router.ts`
+  - Created comprehensive endpoint mapping document at `ralph/endpoint-mapping.md`
+
+- **Files changed:**
+  - Created: `ralph/endpoint-mapping.md` (new documentation)
+  - Modified: `ralph/prd.json` (marked US-001 as complete)
+
+- **Key findings:**
+  - **Implemented (13 endpoints):** Database info/tables, Table schema/data/columns, Query, Auth (deprecated), Connection-auth
+  - **Missing P0 (4 endpoints):** POST/GET/PUT/DELETE /api/v1/connections, GET /api/v1/connections/:id
+  - **Missing P1 (3 endpoints):** Health check, User info get/update
+  - **Partial (3 endpoints):** GET /connections (mock), /connections/:id/test (noop), /query/history (empty)
+
+- **Learnings for future iterations:**
+  - Connection management in Electron needs local persistence (electron-store or JSON file)
+  - Auth endpoints should mirror server behavior (return disabled/anon user)
+  - Error handling pattern: IPC uses `errorResponse(msg, code)` vs Server's `ResponseUtil.error(code, msg)` - note parameter order difference!
+  - The IPC router already has good pattern matching for dynamic routes using regex
+  - LanceDBService already implements most table operations - just needs connection CRUD
+---

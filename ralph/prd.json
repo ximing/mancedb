@@ -1,0 +1,106 @@
+{
+  "project": "LanceDB Admin",
+  "branchName": "ralph/electron-api-compatibility",
+  "description": "Electron API 兼容性完善 - 在 Electron IPC 层实现缺失的 API 端点，使 web 代码可以无缝运行在 server 和 client 两种模式下",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "梳理已实现和缺失的端点",
+      "description": "作为开发者，我需要清楚了解哪些 API 端点已在 Electron IPC 层实现，哪些缺失，以便制定实现计划。",
+      "acceptanceCriteria": [
+        "列出 apps/server/src/controllers/ 中定义的所有端点",
+        "列出 apps/client/src/main/ipc-router.ts 中已实现的所有 IPC 处理器",
+        "生成缺失端点清单（包含 HTTP 方法和路径）",
+        "分类端点优先级（核心功能 vs 次要功能）",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Completed: Created endpoint-mapping.md with full analysis. Key findings: 1) Connection CRUD endpoints missing (P0), 2) User/Health endpoints missing (P1), 3) Most table/query endpoints already implemented."
+    },
+    {
+      "id": "US-002",
+      "title": "统一错误处理和响应格式",
+      "description": "作为开发者，我需要 Electron 模式的错误响应与 server 模式保持一致，以便前端统一处理。",
+      "acceptanceCriteria": [
+        "定义统一的错误响应格式（HTTP 状态码 + 错误消息）",
+        "所有 IPC 处理器返回与 server 相同的响应结构",
+        "错误日志记录到 Electron 主进程控制台",
+        "网络错误、业务错误、系统错误分类处理",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "实现连接管理端点",
+      "description": "作为 Electron 用户，我需要能够创建、读取、更新和删除连接，以便管理 LanceDB 数据库连接。",
+      "acceptanceCriteria": [
+        "实现 POST /api/v1/connections - 创建连接",
+        "实现 GET /api/v1/connections - 获取所有连接",
+        "实现 GET /api/v1/connections/:id - 获取单个连接",
+        "实现 PUT /api/v1/connections/:id - 更新连接",
+        "实现 DELETE /api/v1/connections/:id - 删除连接",
+        "实现 POST /api/v1/connections/:id/test - 测试连接",
+        "Typecheck passes",
+        "Verify in Electron client"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "实现数据库表管理端点",
+      "description": "作为 Electron 用户，我需要能够查看和管理数据库表，以便浏览数据结构。",
+      "acceptanceCriteria": [
+        "实现 GET /api/v1/database/tables - 获取表列表",
+        "实现 GET /api/v1/database/tables/:name/schema - 获取表结构",
+        "实现 POST /api/v1/database/tables - 创建表",
+        "实现 DELETE /api/v1/database/tables/:name - 删除表",
+        "实现 GET /api/v1/database/tables/:name/count - 获取记录数",
+        "Typecheck passes",
+        "Verify in Electron client"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "实现数据查询端点",
+      "description": "作为 Electron 用户，我需要能够执行 SQL 查询和向量搜索，以便检索和操作数据。",
+      "acceptanceCriteria": [
+        "实现 POST /api/v1/query - 执行 SQL 查询",
+        "实现 POST /api/v1/search - 向量搜索",
+        "实现 GET /api/v1/tables/:name/data - 分页获取数据",
+        "实现 POST /api/v1/tables/:name/data - 插入数据",
+        "实现 PUT /api/v1/tables/:name/data/:id - 更新数据",
+        "实现 DELETE /api/v1/tables/:name/data/:id - 删除数据",
+        "Typecheck passes",
+        "Verify in Electron client"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "实现认证相关端点",
+      "description": "作为 Electron 用户，我需要能够登录和认证，以便访问受保护的功能。",
+      "acceptanceCriteria": [
+        "实现 POST /api/v1/auth/login - 用户登录",
+        "实现 POST /api/v1/auth/logout - 用户登出",
+        "实现 GET /api/v1/auth/profile - 获取用户信息",
+        "处理 JWT token 的存储和刷新",
+        "Typecheck passes",
+        "Verify in Electron client"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

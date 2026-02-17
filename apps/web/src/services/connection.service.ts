@@ -66,6 +66,7 @@ export class ConnectionService extends Service {
     this.error = null;
     try {
       const response = await createConnectionApi(data);
+      console.warn('response',response)
       if (response.code === 0) {
         this.connections.push(response.data);
         return response.data;
@@ -74,6 +75,7 @@ export class ConnectionService extends Service {
         return null;
       }
     } catch (err) {
+      console.error(err);
       this.error = err instanceof Error ? err.message : 'Failed to create connection';
       return null;
     } finally {
