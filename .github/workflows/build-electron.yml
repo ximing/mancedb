@@ -87,7 +87,7 @@ jobs:
         with:
           name: web-dist
           path: |
-            apps/server/public/**
+            apps/client/dist/web/**
           retention-days: 1
 
   # Typecheck and lint client
@@ -156,7 +156,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/server/public
+          path: apps/client/dist/web
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
@@ -210,7 +210,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/server/public
+          path: apps/client/dist/web
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
@@ -264,7 +264,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/server/public
+          path: apps/client/dist/web
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
@@ -318,7 +318,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/server/public
+          path: apps/client/dist/web
 
       - name: Build Electron main process
         run: pnpm --filter @mancedb/client build:electron
