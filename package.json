@@ -1,6 +1,6 @@
 {
   "name": "mancedb",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "license": "BSL-1.1",
   "scripts": {
