@@ -11,6 +11,7 @@ export default defineConfig(() => {
     : '../server/public';
 
   return {
+    base: isElectron ? './' : '/',
     plugins: [react()],
     server: {
       port: 9292,
