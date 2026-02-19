@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LanceDB Admin is a full-stack Web/Electron application for managing LanceDB vector databases. It provides a Navicat-like interface for connection management, table browsing, SQL queries, and data manipulation.
+ManceDB is a full-stack Web/Electron application for managing LanceDB vector databases. It provides a Navicat-like interface for connection management, table browsing, SQL queries, and data manipulation.
 
 ## Architecture
 

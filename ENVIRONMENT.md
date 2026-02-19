@@ -1,6 +1,6 @@
-# LanceDB Admin - 环境变量配置文档
+# ManceDB - 环境变量配置文档
 
-本文档详细说明 LanceDB Admin 应用的所有环境变量配置选项。
+本文档详细说明 ManceDB 应用的所有环境变量配置选项。
 
 ## 快速配置
 

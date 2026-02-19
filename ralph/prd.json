@@ -1,5 +1,5 @@
 {
-  "project": "LanceDB Admin",
+  "project": "ManceDB",
   "branchName": "ralph/electron-api-compatibility",
   "description": "Electron API 兼容性完善 - 在 Electron IPC 层实现缺失的 API 端点，使 web 代码可以无缝运行在 server 和 client 两种模式下",
   "userStories": [

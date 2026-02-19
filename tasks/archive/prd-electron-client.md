@@ -1,8 +1,8 @@
-# PRD: Electron Desktop Client for LanceDB Admin
+# PRD: Electron Desktop Client for ManceDB
 
 ## Introduction
 
-为 LanceDB Admin 提供桌面客户端支持，基于 Electron 构建跨平台应用。客户端将复用现有 Web 端的完整代码，同时提供原生桌面能力，包括本地文件系统访问和直接操作 LanceDB 数据库的能力。用户可以选择连接远程服务或通过原生模块直接操作本地数据库。
+为 ManceDB 提供桌面客户端支持，基于 Electron 构建跨平台应用。客户端将复用现有 Web 端的完整代码，同时提供原生桌面能力，包括本地文件系统访问和直接操作 LanceDB 数据库的能力。用户可以选择连接远程服务或通过原生模块直接操作本地数据库。
 
 ## Goals
 
@@ -115,7 +115,7 @@
 
 - FR-1: Electron 应用启动时加载 apps/web 的渲染进程
 - FR-2: 提供两种数据源模式：
-  - 远程模式：通过 HTTP API 连接 LanceDB Admin 服务
+  - 远程模式：通过 HTTP API 连接 ManceDB 服务
   - 本地模式：通过 IPC 调用直接使用 Node.js LanceDB SDK
 - FR-3: 实现原生文件对话框用于选择数据库目录
 - FR-4: 复用现有 HTTP API 接口定义，映射为 IPC 调用
